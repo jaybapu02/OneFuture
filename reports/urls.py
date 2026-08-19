@@ -6,4 +6,5 @@ app_name = "reports"
 
 urlpatterns = [
     path("", views.report, name="report"),
+    path("download/", views.download_report, name="download"),
 ]
