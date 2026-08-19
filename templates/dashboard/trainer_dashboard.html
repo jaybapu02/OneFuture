@@ -17,7 +17,7 @@
   </div>
 
   <div class="row g-3 mb-4">
-    <div class="col-6 col-lg-3">
+    <div class="col-6 col-lg-4">
       <div class="card stat-card h-100">
         <div class="card-body d-flex align-items-center gap-3">
           <span class="stat-icon" style="background:var(--brand-soft);color:var(--brand-dark);"><i class="bi bi-calendar-check"></i></span>
@@ -28,7 +28,7 @@
         </div>
       </div>
     </div>
-    <div class="col-6 col-lg-3">
+    <div class="col-6 col-lg-4">
       <div class="card stat-card h-100">
         <div class="card-body d-flex align-items-center gap-3">
           <span class="stat-icon" style="background:var(--success-soft);color:var(--success);"><i class="bi bi-journal-check"></i></span>
@@ -39,24 +39,13 @@
         </div>
       </div>
     </div>
-    <div class="col-6 col-lg-3">
+    <div class="col-6 col-lg-4">
       <div class="card stat-card h-100">
         <div class="card-body d-flex align-items-center gap-3">
           <span class="stat-icon" style="background:var(--warning-soft);color:var(--warning);"><i class="bi bi-mortarboard"></i></span>
           <div>
             <div class="stat-label">Classes Covered</div>
             <div class="stat-value">{{ stats.classes_covered }}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="col-6 col-lg-3">
-      <div class="card stat-card h-100">
-        <div class="card-body d-flex align-items-center gap-3">
-          <span class="stat-icon" style="background:var(--info-soft);color:var(--info);"><i class="bi bi-people"></i></span>
-          <div>
-            <div class="stat-label">Students Present</div>
-            <div class="stat-value">{{ stats.students_total }}</div>
           </div>
         </div>
       </div>
@@ -165,8 +154,7 @@
                 <div class="flex-grow-1">
                   <div class="fw-semibold">{{ session.school_class }} · {{ session.subject.name }}</div>
                   <div class="text-muted small">
-                    {{ session.students_present }} students
-                    {% if session.start_time %} · {{ session.start_time|time:"g:i A" }}{% endif %}
+                    {% if session.start_time %}· {{ session.start_time|time:"g:i A" }}{% endif %}
                   </div>
                 </div>
                 <i class="bi bi-chevron-right text-muted"></i>
@@ -193,7 +181,6 @@
                   <div class="fw-semibold">{{ session.school_class }} · Session {{ session.session_number|default:"—" }}</div>
                   <div class="text-muted small text-truncate">{{ session.topic_taught }}</div>
                 </div>
-                <span class="text-muted small text-nowrap"><i class="bi bi-people me-1"></i>{{ session.students_present }}</span>
               </div>
             </a>
             {% endfor %}

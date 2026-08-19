@@ -2,7 +2,7 @@ import datetime
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
@@ -127,7 +127,6 @@ def _trainer_dashboard(request):
     open_tasks = Task.objects.filter(trainer=profile).exclude(
         status=Task.Status.COMPLETED
     )
-    students_today = sum(s.students_present for s in sessions_today)
     weekly_classes = Timetable.objects.filter(
         trainer=profile, is_active=True
     ).count()
@@ -147,12 +146,8 @@ def _trainer_dashboard(request):
             "today_classes": len(timetable_cards),
             "completed_today": len(sessions_today),
             "pending_tasks": open_tasks.count(),
-            "students_today": students_today,
             "weekly_classes": weekly_classes,
             "completed_sessions": all_sessions.count(),
-            "students_total": all_sessions.aggregate(
-                total=Sum("students_present")
-            )["total"] or 0,
             "classes_covered": all_sessions.values("school_class").distinct().count(),
         },
     }
