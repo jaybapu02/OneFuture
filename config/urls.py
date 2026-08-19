@@ -4,12 +4,20 @@ Root URL configuration for the OneFuture project.
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.http import HttpResponse
 from django.urls import include, path
 from django.views.generic import RedirectView
 
 from accounts.views import dashboard
 
+
+def health(request):
+    """Public health check for the hosting platform."""
+    return HttpResponse("ok")
+
+
 urlpatterns = [
+    path("health/", health, name="health"),
     path("", RedirectView.as_view(pattern_name="dashboard", permanent=False)),
     path("dashboard/", dashboard, name="dashboard"),
     path("admin/", admin.site.urls),
