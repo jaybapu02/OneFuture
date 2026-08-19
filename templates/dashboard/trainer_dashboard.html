@@ -1,23 +1,28 @@
 {% extends "app_base.html" %}
+{% load url_utils %}
 
 {% block title %}Dashboard · {{ SITE_NAME }}{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
 
 {% block content %}
-<div class="px-3 px-lg-4">
-  <div class="page-head d-flex flex-wrap align-items-end justify-content-between gap-2">
+<div class="px-3 px-lg-4 py-3">
+  <!-- Welcome header -->
+  <div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
     <div>
-      <h1>{{ greeting }}, {{ request.user.profile.full_name|default:request.user.username }}</h1>
-      <div class="sub">
-        <i class="bi bi-calendar3 me-1"></i>{{ today|date:"l, d F Y" }}
-        {% if profile.school %} · <i class="bi bi-building me-1"></i>{{ profile.school }}{% endif %}
+      <h1 class="mb-1">{{ greeting }}, {{ request.user.profile.full_name|default:request.user.username }}</h1>
+      <div class="d-flex flex-wrap align-items-center gap-2 text-muted" style="font-size:.9rem;">
+        <span class="d-inline-flex align-items-center gap-1"><i class="bi bi-calendar3"></i>{{ today|date:"l, d F Y" }}</span>
+        {% if profile.school %}
+        <span class="d-inline-flex align-items-center gap-1"><i class="bi bi-building"></i>{{ profile.school }}</span>
+        {% endif %}
       </div>
     </div>
     <a class="btn btn-soft" href="{% url 'timetable:my_timetable' %}"><i class="bi bi-calendar-week me-1"></i>My Timetable</a>
   </div>
 
+  <!-- Summary stats -->
   <div class="row g-3 mb-4">
-    <div class="col-6 col-lg-4">
+    <div class="col-6 col-xl-3">
       <div class="card stat-card h-100">
         <div class="card-body d-flex align-items-center gap-3">
           <span class="stat-icon" style="background:var(--brand-soft);color:var(--brand-dark);"><i class="bi bi-calendar-check"></i></span>
@@ -28,7 +33,29 @@
         </div>
       </div>
     </div>
-    <div class="col-6 col-lg-4">
+    <div class="col-6 col-xl-3">
+      <div class="card stat-card h-100">
+        <div class="card-body d-flex align-items-center gap-3">
+          <span class="stat-icon" style="background:var(--info-soft);color:var(--info);"><i class="bi bi-calendar-week"></i></span>
+          <div>
+            <div class="stat-label">Weekly Classes</div>
+            <div class="stat-value">{{ stats.weekly_classes }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-3">
+      <div class="card stat-card h-100">
+        <div class="card-body d-flex align-items-center gap-3">
+          <span class="stat-icon" style="background:var(--warning-soft);color:var(--warning);"><i class="bi bi-check2-square"></i></span>
+          <div>
+            <div class="stat-label">Pending Tasks</div>
+            <div class="stat-value">{{ stats.pending_tasks }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-3">
       <div class="card stat-card h-100">
         <div class="card-body d-flex align-items-center gap-3">
           <span class="stat-icon" style="background:var(--success-soft);color:var(--success);"><i class="bi bi-journal-check"></i></span>
@@ -39,54 +66,55 @@
         </div>
       </div>
     </div>
-    <div class="col-6 col-lg-4">
-      <div class="card stat-card h-100">
-        <div class="card-body d-flex align-items-center gap-3">
-          <span class="stat-icon" style="background:var(--warning-soft);color:var(--warning);"><i class="bi bi-mortarboard"></i></span>
-          <div>
-            <div class="stat-label">Classes Covered</div>
-            <div class="stat-value">{{ stats.classes_covered }}</div>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <div class="row g-4">
-    <div class="col-lg-7">
+    <!-- Left column: today's classes -->
+    <div class="col-lg-8">
       <div class="card">
-        <div class="card-header d-flex align-items-center justify-content-between">
-          <span>Today's Classes</span>
-          <span class="text-muted small">
-            {{ today|date:"l" }} · <strong>{{ stats.weekly_classes }}</strong> classes per week
-          </span>
+        <div class="card-header">
+          <span><i class="bi bi-mortarboard me-2" style="color:var(--brand);"></i>Today's Classes</span>
+          <span class="text-muted small fw-normal">{{ today|date:"l" }} · {{ stats.today_classes }} class{{ stats.today_classes|pluralize }}</span>
         </div>
         <div class="card-body">
           {% if timetable_cards %}
             {% for card in timetable_cards %}
-            <div class="tt-card {% if card.status == 'current' %}current{% endif %} mb-3">
+            <div class="class-card {% if card.status == 'current' %}class-card--current{% endif %}">
               <div class="d-flex flex-wrap align-items-center gap-2">
-                <div class="tt-time me-2">
-                  {{ card.start_time|time:"g:i A" }} – {{ card.end_time|time:"g:i A" }}
+                <div class="class-time">
+                  <i class="bi bi-clock"></i>{{ card.start_time|time:"g:i A" }} – {{ card.end_time|time:"g:i A" }}
                 </div>
                 {% if card.is_manual %}
                 <span class="badge badge-soft-warning">Manual</span>
                 {% else %}
                 <span class="badge badge-soft-muted">Period {{ card.period }}</span>
                 {% endif %}
-                <span class="ms-auto badge {% if card.status == 'completed' %}badge-soft-success{% elif card.status == 'current' %}badge-soft-brand{% elif card.status == 'upcoming' %}badge-soft-info{% else %}badge-soft-muted{% endif %}">
-                  <span class="status-dot {{ card.status }}"></span>
-                  {% if card.status == 'completed' %}Completed{% elif card.status == 'current' %}Current{% elif card.status == 'upcoming' %}Upcoming{% else %}Done for today{% endif %}
+                <span class="ms-auto d-inline-flex align-items-center gap-1">
+                  {% if card.status == 'current' %}
+                  <span class="live-pill"><span class="live-dot"></span>Live now</span>
+                  {% elif card.status == 'completed' %}
+                  <span class="badge badge-soft-success"><i class="bi bi-check-lg me-1"></i>Completed</span>
+                  {% elif card.status == 'upcoming' %}
+                  <span class="badge badge-soft-info"><span class="status-dot upcoming"></span>Upcoming</span>
+                  {% else %}
+                  <span class="badge badge-soft-muted">Done for today</span>
+                  {% endif %}
                 </span>
               </div>
-              <div class="mt-2">
-                <div class="tt-class">
-                  <i class="bi bi-mortarboard me-1"></i>
+
+              <div class="mt-2 d-flex flex-wrap align-items-center gap-2">
+                <div class="class-name">
                   {% if card.is_manual %}{{ card.manual.school_class }}{% else %}{{ card.entry.school_class }}{% endif %}
-                  {% if not card.is_manual and card.entry.subject %}<span class="text-muted small">· {{ card.entry.subject.name }}</span>{% endif %}
-                  {% if card.is_manual and card.manual.subject %}<span class="text-muted small">· {{ card.manual.subject.name }}</span>{% endif %}
                 </div>
+                <div class="class-meta">
+                  {% if not card.is_manual and card.entry.subject %}<i class="bi bi-book me-1"></i>{{ card.entry.subject.name }}{% endif %}
+                  {% if card.is_manual and card.manual.subject %}<i class="bi bi-book me-1"></i>{{ card.manual.subject.name }}{% endif %}
+                </div>
+                {% if forloop.first and card.status == 'upcoming' %}
+                <span class="next-up"><i class="bi bi-arrow-up-right"></i>Next up</span>
+                {% endif %}
               </div>
+
               <div class="mt-3 d-flex flex-wrap gap-2">
                 {% if card.status != 'completed' %}
                   {% if card.is_manual %}
@@ -114,22 +142,23 @@
         </div>
       </div>
 
+      <!-- Pending tasks preview -->
       <div class="card mt-4">
-        <div class="card-header d-flex align-items-center justify-content-between">
-          <span>Today's Tasks</span>
-          <a class="small" href="{% url 'tasks:task_list' %}">View all</a>
+        <div class="card-header">
+          <span><i class="bi bi-check2-square me-2" style="color:var(--warning);"></i>Today's Tasks</span>
+          <a class="small fw-semibold" href="{% url 'tasks:task_list' %}">View all</a>
         </div>
         <div class="card-body">
           {% if tasks_today %}
             {% for task in tasks_today %}
-            <div class="d-flex align-items-start gap-3 py-2 border-bottom {% if forloop.last %}border-0{% endif %}">
-              <span class="badge {% if task.status == 'Completed' %}badge-soft-success{% elif task.status == 'In Progress' %}badge-soft-info{% else %}badge-soft-warning{% endif %} mt-1">{{ task.status }}</span>
-              <div class="flex-grow-1">
-                <div class="fw-semibold">{{ task.title }}</div>
+            <div class="list-row">
+              <span class="badge {% if task.status == 'Completed' %}badge-soft-success{% elif task.status == 'In Progress' %}badge-soft-info{% else %}badge-soft-warning{% endif %}">{{ task.status }}</span>
+              <div class="flex-grow-1" style="min-width:0;">
+                <div class="fw-semibold text-truncate">{% if task.status == 'Completed' %}<s class="text-muted">{{ task.title }}</s>{% else %}{{ task.title }}{% endif %}</div>
                 <div class="text-muted small">{{ task.school_class }} · {{ task.subject.name }}
                   {% if task.start_time %} · {{ task.start_time|time:"g:i A" }}{% endif %}</div>
               </div>
-              <span class="badge {% if task.priority == 'High' %}badge-soft-danger{% elif task.priority == 'Medium' %}badge-soft-warning{% else %}badge-soft-muted{% endif %}">{{ task.priority }}</span>
+              <span class="badge {% if task.priority == 'High' %}badge-priority-high{% elif task.priority == 'Medium' %}badge-priority-medium{% else %}badge-priority-low{% endif %}">{{ task.priority }}</span>
             </div>
             {% endfor %}
           {% else %}
@@ -139,67 +168,74 @@
       </div>
     </div>
 
-    <div class="col-lg-5">
-      <div class="card">
-        <div class="card-header d-flex align-items-center justify-content-between">
-          <span>Today's Sessions</span>
-          <a class="small" href="{% url 'sessions:session_list' %}">View all</a>
+    <!-- Right column -->
+    <div class="col-lg-4">
+      <!-- Quick actions -->
+      <div class="card mb-4">
+        <div class="card-header"><span><i class="bi bi-lightning-charge me-2" style="color:var(--brand);"></i>Quick Actions</span></div>
+        <div class="card-body">
+          <div class="d-grid gap-2">
+            <a class="quick-action" href="{% url 'tasks:task_create' %}"><i class="bi bi-plus-lg"></i>Assign Task</a>
+            <a class="quick-action" href="{% url 'timetable:assign_manual_class' %}"><i class="bi bi-calendar-plus"></i>Assign Class</a>
+            <a class="quick-action" href="{% url 'timetable:my_timetable' %}"><i class="bi bi-calendar-week"></i>My Timetable</a>
+            <a class="quick-action" href="{% url 'sessions:session_list' %}"><i class="bi bi-journal-check"></i>Session History</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weekly timetable preview -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <span><i class="bi bi-calendar-week me-2" style="color:var(--info);"></i>This Week</span>
+          <a class="small fw-semibold" href="{% url 'timetable:my_timetable' %}">View full timetable →</a>
         </div>
         <div class="card-body">
-          {% if sessions_today %}
-            {% for session in sessions_today %}
+          {% if stats.weekly_classes %}
+            {% for day in weekdays %}
+            <div class="list-row {% if day == today|date:'l' %}bg-body-tertiary rounded px-2{% endif %}">
+              <span class="week-day-head {% if day == today|date:'l' %}today{% endif %}">{{ day|slice:":3" }}</span>
+              {% with entries=week_preview|get_item:day %}
+                {% if entries %}
+                <div class="flex-grow-1" style="min-width:0;">
+                  <span class="fw-semibold text-truncate d-block" style="font-size:.86rem;">{{ entries.0.school_class }}{% if entries.0.subject %} · {{ entries.0.subject.name }}{% endif %}</span>
+                  <span class="text-muted small">{{ entries.0.start_time|time:"g:i A" }}{% if entries|length > 1 %} +{{ entries|length|add:"-1" }} more{% endif %}</span>
+                </div>
+                {% if day == today|date:'l' %}<span class="badge badge-soft-brand">Today</span>{% endif %}
+                {% else %}
+                <div class="flex-grow-1"><span class="text-muted small">—</span></div>
+                {% endif %}
+              {% endwith %}
+            </div>
+            {% endfor %}
+          {% else %}
+            {% include "partials/empty_state.html" with empty_icon="bi-calendar-x" empty_title="No weekly timetable" empty_text="Upload your weekly timetable to see it here." %}
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Recent sessions -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <span><i class="bi bi-journal-text me-2" style="color:var(--success);"></i>Recent Sessions</span>
+          <a class="small fw-semibold" href="{% url 'sessions:session_list' %}?month={{ today|date:'Y-m' }}">View all →</a>
+        </div>
+        <div class="card-body">
+          {% if recent_sessions %}
+            {% for session in recent_sessions %}
             <a href="{% url 'sessions:session_detail' session.pk %}" class="text-decoration-none text-reset">
-              <div class="d-flex align-items-center gap-3 py-2 border-bottom {% if forloop.last %}border-0{% endif %}">
-                <span class="badge badge-soft-brand">Session {{ session.session_number }}</span>
-                <div class="flex-grow-1">
-                  <div class="fw-semibold">{{ session.school_class }} · {{ session.subject.name }}</div>
-                  <div class="text-muted small">
-                    {% if session.start_time %}· {{ session.start_time|time:"g:i A" }}{% endif %}
-                  </div>
+              <div class="list-row">
+                <span class="badge badge-soft-brand text-nowrap">{{ session.date|date:"d M" }}</span>
+                <div class="flex-grow-1" style="min-width:0;">
+                  <div class="fw-semibold text-truncate">{{ session.school_class }} · Session {{ session.session_number|default:"—" }}</div>
+                  <div class="text-muted small"><i class="bi bi-people me-1"></i>{{ session.students_present }} students present</div>
                 </div>
                 <i class="bi bi-chevron-right text-muted"></i>
               </div>
             </a>
             {% endfor %}
           {% else %}
-            {% include "partials/empty_state.html" with empty_icon="bi-journal-text" empty_title="No sessions recorded yet today" empty_text="Completed sessions will appear here." %}
-          {% endif %}
-        </div>
-      </div>
-    <div class="card mt-4">
-        <div class="card-header d-flex align-items-center justify-content-between">
-          <span>Recent Sessions</span>
-          <a class="small" href="{% url 'sessions:session_list' %}?month={{ today|date:'Y-m' }}">View all</a>
-        </div>
-        <div class="card-body">
-          {% if recent_sessions %}
-            {% for session in recent_sessions %}
-            <a href="{% url 'sessions:session_detail' session.pk %}" class="text-decoration-none text-reset">
-              <div class="d-flex align-items-center gap-3 py-2 border-bottom {% if forloop.last %}border-0{% endif %}">
-                <span class="badge badge-soft-brand text-nowrap">{{ session.date|date:"d M" }}</span>
-                <div class="flex-grow-1">
-                  <div class="fw-semibold">{{ session.school_class }} · Session {{ session.session_number|default:"—" }}</div>
-                  <div class="text-muted small text-truncate">{{ session.topic_taught }}</div>
-                </div>
-              </div>
-            </a>
-            {% endfor %}
-          {% else %}
             {% include "partials/empty_state.html" with empty_icon="bi-journal-text" empty_title="No sessions recorded yet" empty_text="Your session history will appear here." %}
           {% endif %}
-        </div>
-      </div>
-
-      <div class="card mt-4">
-        <div class="card-header d-flex align-items-center justify-content-between">
-          <span>Pending Tasks</span>
-          <a class="small" href="{% url 'tasks:task_list' %}">View all</a>
-        </div>
-        <div class="card-body">
-          <div class="text-center py-2">
-            <div class="stat-value">{{ stats.pending_tasks }}</div>
-            <div class="text-muted small">open task{% if stats.pending_tasks != 1 %}s{% endif %}</div>
-          </div>
         </div>
       </div>
     </div>

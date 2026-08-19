@@ -4,27 +4,27 @@
 {% block page_title %}{% if task %}Edit Task{% else %}New Task{% endif %}{% endblock %}
 
 {% block content %}
-<div class="px-3 px-lg-4">
+<div class="px-3 px-lg-4 py-3">
   <div class="row justify-content-center">
     <div class="col-lg-8 col-xl-7">
       {% if timetable %}
-      <div class="card mb-3">
+      <div class="card mb-3" style="border-color:var(--info-soft);background:linear-gradient(135deg,#f4f8ff,#ffffff);">
         <div class="card-body py-3">
           <div class="text-muted small mb-2"><i class="bi bi-info-circle me-1"></i>Pre-filled from your timetable:</div>
-          <div class="d-flex flex-wrap gap-3">
+          <div class="d-flex flex-wrap align-items-center gap-2">
             <span class="badge badge-soft-brand">{{ timetable.get_day_of_week_display }} · {{ timetable.start_time|time:"g:i A" }}{% if timetable.end_time %} – {{ timetable.end_time|time:"g:i A" }}{% endif %}</span>
-            <span class="badge badge-soft-info">{{ timetable.school_class }}</span>
+            <span class="fw-semibold">{{ timetable.school_class }}</span>
             {% if timetable.subject %}<span class="badge badge-soft-muted">{{ timetable.subject.name }}</span>{% endif %}
           </div>
         </div>
       </div>
       {% elif manual %}
-      <div class="card mb-3">
+      <div class="card mb-3" style="border-color:var(--warning-soft);background:linear-gradient(135deg,#fffaf0,#ffffff);">
         <div class="card-body py-3">
           <div class="text-muted small mb-2"><i class="bi bi-info-circle me-1"></i>Pre-filled from your manual class:</div>
-          <div class="d-flex flex-wrap gap-3">
+          <div class="d-flex flex-wrap align-items-center gap-2">
             <span class="badge badge-soft-warning">Manual · {{ manual.date|date:"l, d M" }} · {{ manual.start_time|time:"g:i A" }}{% if manual.end_time %} – {{ manual.end_time|time:"g:i A" }}{% endif %}</span>
-            <span class="badge badge-soft-info">{{ manual.school_class }}</span>
+            <span class="fw-semibold">{{ manual.school_class }}</span>
             {% if manual.subject %}<span class="badge badge-soft-muted">{{ manual.subject.name }}</span>{% endif %}
           </div>
         </div>
@@ -32,24 +32,25 @@
       {% endif %}
 
       <div class="card">
-        <div class="card-header">{% if task %}Edit task{% else %}Assign a task{% endif %}</div>
+        <div class="card-header"><i class="bi bi-check2-square me-2" style="color:var(--brand);"></i>{% if task %}Edit task{% else %}Assign a task{% endif %}</div>
         <div class="card-body">
           {% if form.non_field_errors %}
             {% for error in form.non_field_errors %}
-            <div class="alert alert-danger py-2">{{ error }}</div>
+            <div class="alert alert-danger py-2"><i class="bi bi-exclamation-triangle me-1"></i>{{ error }}</div>
             {% endfor %}
           {% endif %}
           <form method="post" novalidate>
             {% csrf_token %}
             {% for field in form %}
             <div class="mb-3">
-              <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+              <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="req">*</span>{% endif %}</label>
               {{ field }}
-              {% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+              {% for error in field.errors %}<div class="field-error"><i class="bi bi-exclamation-circle"></i>{{ error }}</div>{% endfor %}
+              {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
             </div>
             {% endfor %}
-            <div class="d-flex gap-2">
-              <button type="submit" class="btn btn-brand px-4">{% if task %}Save changes{% else %}Create task{% endif %}</button>
+            <div class="d-grid d-sm-flex gap-2">
+              <button type="submit" class="btn btn-brand px-4">{% if task %}<i class="bi bi-check2 me-1"></i>Save changes{% else %}<i class="bi bi-plus-lg me-1"></i>Create task{% endif %}</button>
               <a href="{% url 'tasks:task_list' %}" class="btn btn-light">Cancel</a>
             </div>
           </form>

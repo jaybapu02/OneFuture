@@ -1,55 +1,74 @@
 {% load static %}
 {% with url_name=request.resolver_match.url_name %}
+{% if not hide_brand %}
 <span class="sidebar-brand">
   <img src="{% static 'img/logo.jpeg' %}" class="brand-logo" alt="{{ SITE_NAME }}">
-  {{ SITE_NAME }}
+  <span class="brand-text">{{ SITE_NAME }}<small>Trainer Management</small></span>
 </span>
+{% endif %}
 
 <nav class="nav flex-column flex-grow-1">
   <div class="nav-section">Main</div>
   <a class="nav-link {% if url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
-    <i class="bi bi-speedometer2"></i> Dashboard
+    <i class="bi bi-speedometer2" aria-hidden="true"></i> <span>Dashboard</span>
   </a>
   <a class="nav-link {% if url_name == 'my_timetable' %}active{% endif %}" href="{% url 'timetable:my_timetable' %}">
-    <i class="bi bi-calendar-week"></i> My Timetable
+    <i class="bi bi-calendar-week" aria-hidden="true"></i> <span>My Timetable</span>
   </a>
   <a class="nav-link {% if url_name == 'task_list' %}active{% endif %}" href="{% url 'tasks:task_list' %}">
-    <i class="bi bi-check2-square"></i> Tasks
+    <i class="bi bi-check2-square" aria-hidden="true"></i> <span>Tasks</span>
   </a>
   <a class="nav-link {% if url_name == 'session_list' %}active{% endif %}" href="{% url 'sessions:session_list' %}">
-    <i class="bi bi-journal-check"></i> Sessions
+    <i class="bi bi-journal-check" aria-hidden="true"></i> <span>Sessions</span>
   </a>
   <a class="nav-link {% if url_name == 'report' %}active{% endif %}" href="{% url 'reports:report' %}">
-    <i class="bi bi-graph-up"></i> Reports
+    <i class="bi bi-graph-up" aria-hidden="true"></i> <span>Reports</span>
   </a>
 
   {% if request.user.is_staff %}
   <div class="nav-section">Administration</div>
   <a class="nav-link {% if url_name == 'trainer_list' %}active{% endif %}" href="{% url 'trainers:trainer_list' %}">
-    <i class="bi bi-people"></i> Trainers
+    <i class="bi bi-people" aria-hidden="true"></i> <span>Trainers</span>
   </a>
   <a class="nav-link {% if url_name == 'class_list' %}active{% endif %}" href="{% url 'classes:class_list' %}">
-    <i class="bi bi-mortarboard"></i> Classes
+    <i class="bi bi-mortarboard" aria-hidden="true"></i> <span>Classes</span>
   </a>
   <a class="nav-link {% if url_name == 'school_list' %}active{% endif %}" href="{% url 'trainers:school_list' %}">
-    <i class="bi bi-building"></i> Schools
+    <i class="bi bi-building" aria-hidden="true"></i> <span>Schools</span>
   </a>
   <a class="nav-link {% if url_name == 'subject_list' %}active{% endif %}" href="{% url 'classes:subject_list' %}">
-    <i class="bi bi-book"></i> Subjects
+    <i class="bi bi-book" aria-hidden="true"></i> <span>Subjects</span>
   </a>
   <a class="nav-link {% if url_name == 'manage_list' %}active{% endif %}" href="{% url 'timetable:manage_list' %}">
-    <i class="bi bi-clock-history"></i> Timetable
+    <i class="bi bi-clock-history" aria-hidden="true"></i> <span>Timetable</span>
   </a>
   <a class="nav-link" href="/admin/" target="_blank" rel="noopener">
-    <i class="bi bi-gear"></i> Django Admin
+    <i class="bi bi-gear" aria-hidden="true"></i> <span>Django Admin</span>
   </a>
   {% endif %}
 </nav>
 
-<form class="logout-form" method="post" action="{% url 'accounts:logout' %}">
-  {% csrf_token %}
-  <button type="submit" class="nav-link w-100 text-start text-danger">
-    <i class="bi bi-box-arrow-right"></i> Logout
-  </button>
-</form>
+{% if not hide_brand %}
+<button type="button" id="sidebarToggle" class="sidebar-toggle" aria-label="Toggle sidebar" aria-expanded="true">
+  <i class="bi bi-chevron-left" aria-hidden="true"></i><span>Collapse</span>
+</button>
+{% endif %}
+
+<div class="side-user">
+  <div class="d-flex align-items-center gap-2">
+    <span class="avatar">{{ request.user.first_name|default:request.user.username|slice:":1"|upper }}</span>
+    <div class="side-user-text flex-grow-1">
+      <div class="side-user-name">{{ request.user.profile.full_name|default:request.user.username }}</div>
+      <div class="side-user-meta">
+        {% if request.user.is_staff %}Administrator{% else %}{{ request.user.profile.school|default:"Trainer" }}{% endif %}
+      </div>
+    </div>
+  </div>
+  <form class="logout-form mt-2" method="post" action="{% url 'accounts:logout' %}">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-light btn-sm w-100 text-danger">
+      <i class="bi bi-box-arrow-right me-1"></i> Logout
+    </button>
+  </form>
+</div>
 {% endwith %}

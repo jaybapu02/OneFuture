@@ -2,96 +2,228 @@
 
 {% block title %}Admin Dashboard · {{ SITE_NAME }}{% endblock %}
 {% block page_title %}Admin Dashboard{% endblock %}
+{% block breadcrumb %}<span class="topbar-breadcrumb">Home / Dashboard</span>{% endblock %}
 
 {% block content %}
-<div class="px-3 px-lg-4">
-  <div class="page-head">
-    <h1>Overview</h1>
-    <div class="sub"><i class="bi bi-calendar3 me-1"></i>{{ today|date:"l, d F Y" }}</div>
+<div class="px-3 px-lg-4 py-3">
+
+  <div class="welcome-head mb-4">
+    <h1>Welcome back, {{ request.user.profile.full_name|default:"Admin"|truncatechars:24 }}</h1>
+    <div class="welcome-sub">Here's what's happening across the organization today.</div>
   </div>
 
   <div class="row g-3 mb-4">
-    <div class="col-6 col-lg-2">
-      <div class="card stat-card h-100">
-        <div class="card-body text-center py-3">
+    <div class="col-6 col-lg-4 col-xl-2">
+      <div class="card kpi-card">
+        <div class="card-body d-flex flex-column gap-2 py-3">
+          <div class="d-flex align-items-center justify-content-between">
+            <span class="stat-label">Total Trainers</span>
+            <span class="stat-icon" style="background:var(--brand-soft);color:var(--brand-dark);"><i class="bi bi-people"></i></span>
+          </div>
           <div class="stat-value">{{ stats.total_trainers }}</div>
-          <div class="stat-label">Total Trainers</div>
+          <div class="stat-hint">{{ stats.active_trainers }} active</div>
         </div>
       </div>
     </div>
-    <div class="col-6 col-lg-2">
-      <div class="card stat-card h-100">
-        <div class="card-body text-center py-3">
+    <div class="col-6 col-lg-4 col-xl-2">
+      <div class="card kpi-card">
+        <div class="card-body d-flex flex-column gap-2 py-3">
+          <div class="d-flex align-items-center justify-content-between">
+            <span class="stat-label">Active Trainers</span>
+            <span class="stat-icon" style="background:var(--success-soft);color:var(--success-dark);"><i class="bi bi-person-check"></i></span>
+          </div>
           <div class="stat-value">{{ stats.active_trainers }}</div>
-          <div class="stat-label">Active Trainers</div>
+          <div class="stat-hint">Currently active</div>
         </div>
       </div>
     </div>
-    <div class="col-6 col-lg-2">
-      <div class="card stat-card h-100">
-        <div class="card-body text-center py-3">
+    <div class="col-6 col-lg-4 col-xl-2">
+      <div class="card kpi-card">
+        <div class="card-body d-flex flex-column gap-2 py-3">
+          <div class="d-flex align-items-center justify-content-between">
+            <span class="stat-label">Total Classes</span>
+            <span class="stat-icon" style="background:var(--info-soft);color:var(--info);"><i class="bi bi-mortarboard"></i></span>
+          </div>
           <div class="stat-value">{{ stats.total_classes }}</div>
-          <div class="stat-label">Total Classes</div>
+          <div class="stat-hint">Across all schools</div>
         </div>
       </div>
     </div>
-    <div class="col-6 col-lg-2">
-      <div class="card stat-card h-100">
-        <div class="card-body text-center py-3">
+    <div class="col-6 col-lg-4 col-xl-2">
+      <div class="card kpi-card">
+        <div class="card-body d-flex flex-column gap-2 py-3">
+          <div class="d-flex align-items-center justify-content-between">
+            <span class="stat-label">Today's Classes</span>
+            <span class="stat-icon" style="background:var(--warning-soft);color:var(--warning);"><i class="bi bi-calendar-check"></i></span>
+          </div>
           <div class="stat-value">{{ stats.today_classes }}</div>
-          <div class="stat-label">Today's Classes</div>
+          <div class="stat-hint">Scheduled today</div>
         </div>
       </div>
     </div>
-    <div class="col-6 col-lg-2">
-      <div class="card stat-card h-100">
-        <div class="card-body text-center py-3">
+    <div class="col-6 col-lg-4 col-xl-2">
+      <div class="card kpi-card">
+        <div class="card-body d-flex flex-column gap-2 py-3">
+          <div class="d-flex align-items-center justify-content-between">
+            <span class="stat-label">Completed Today</span>
+            <span class="stat-icon" style="background:var(--success-soft);color:var(--success-dark);"><i class="bi bi-journal-check"></i></span>
+          </div>
           <div class="stat-value">{{ stats.completed_today }}</div>
-          <div class="stat-label">Completed Today</div>
+          <div class="stat-hint">Sessions recorded</div>
         </div>
       </div>
     </div>
-    <div class="col-6 col-lg-2">
-      <div class="card stat-card h-100">
-        <div class="card-body text-center py-3">
+    <div class="col-6 col-lg-4 col-xl-2">
+      <div class="card kpi-card">
+        <div class="card-body d-flex flex-column gap-2 py-3">
+          <div class="d-flex align-items-center justify-content-between">
+            <span class="stat-label">Pending Reports</span>
+            <span class="stat-icon" style="background:var(--danger-soft);color:var(--danger-dark);"><i class="bi bi-hourglass-split"></i></span>
+          </div>
           <div class="stat-value {% if stats.pending_reports %}text-warning{% endif %}">{{ stats.pending_reports }}</div>
-          <div class="stat-label">Pending Reports</div>
+          <div class="stat-hint">Awaiting reports</div>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-header">Today's Trainer Activity</div>
-    <div class="card-body p-0">
-      {% if activity_rows %}
-      <div class="table-responsive">
-        <table class="table table-hover mb-0">
-          <thead>
-            <tr><th>Time</th><th>Trainer</th><th>Class</th><th>Subject</th><th class="text-end">Status</th></tr>
-          </thead>
-          <tbody>
-            {% for row in activity_rows %}
-            <tr>
-              <td class="text-nowrap">{{ row.entry.start_time|time:"g:i A" }}{% if row.entry.end_time %} – {{ row.entry.end_time|time:"g:i A" }}{% endif %}</td>
-              <td>{{ row.entry.trainer.full_name }}</td>
-              <td>{{ row.entry.school_class }}</td>
-              <td>{{ row.entry.subject.name }}</td>
-              <td class="text-end">
-                {% if row.completed %}
-                <span class="badge badge-soft-success">Completed</span>
-                {% else %}
-                <span class="badge badge-soft-warning">Report pending</span>
-                {% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+  <div class="card mb-4">
+    <div class="card-body py-3">
+      <div class="row g-2">
+        <div class="col-6 col-lg-3">
+          <a class="qa-btn" href="{% url 'trainers:trainer_create' %}"><i class="bi bi-person-plus"></i> Add Trainer</a>
+        </div>
+        <div class="col-6 col-lg-3">
+          <a class="qa-btn" href="{% url 'classes:class_create' %}"><i class="bi bi-mortarboard"></i> Add Class</a>
+        </div>
+        <div class="col-6 col-lg-3">
+          <a class="qa-btn" href="{% url 'timetable:manage_list' %}"><i class="bi bi-clock-history"></i> Manage Timetable</a>
+        </div>
+        <div class="col-6 col-lg-3">
+          <a class="qa-btn" href="{% url 'reports:report' %}"><i class="bi bi-graph-up"></i> View Reports</a>
+        </div>
       </div>
-      {% else %}
-        {% include "partials/empty_state.html" with empty_icon="bi-calendar-x" empty_title="No classes scheduled today" empty_text="Add timetable entries to see trainer activity here." %}
-      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card h-100">
+        <div class="card-header">
+          <div>
+            <div class="card-head-title">Today's Trainer Activity</div>
+            <div class="card-head-sub">Overview of today's scheduled and completed classes.</div>
+          </div>
+          <a class="view-all" href="{% url 'sessions:session_list' %}">View All <i class="bi bi-arrow-right"></i></a>
+        </div>
+        <div class="card-body p-0">
+          {% if activity_rows %}
+          <div class="table-responsive d-none d-md-block">
+            <table class="table table-soft table-hover mb-0">
+              <thead>
+                <tr><th>Time</th><th>Trainer</th><th>Class</th><th>Subject</th><th class="text-end">Status</th></tr>
+              </thead>
+              <tbody>
+                {% for row in activity_rows %}
+                <tr>
+                  <td class="text-nowrap fw-semibold">{{ row.entry.start_time|time:"g:i A" }}{% if row.entry.end_time %} – {{ row.entry.end_time|time:"g:i A" }}{% endif %}</td>
+                  <td>{{ row.entry.trainer.full_name }}</td>
+                  <td>{{ row.entry.school_class }}</td>
+                  <td>{{ row.entry.subject.name }}</td>
+                  <td class="text-end">
+                    {% if row.status == "completed" %}
+                    <span class="badge badge-soft-success badge-status">Completed</span>
+                    {% elif row.status == "in_progress" %}
+                    <span class="badge badge-soft-brand badge-status">In Progress</span>
+                    {% elif row.status == "upcoming" %}
+                    <span class="badge badge-soft-info badge-status">Upcoming</span>
+                    {% else %}
+                    <span class="badge badge-soft-warning badge-status">Pending</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="p-3 d-md-none">
+            {% for row in activity_rows %}
+            <div class="activity-card">
+              <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                <span class="act-time">{{ row.entry.start_time|time:"g:i A" }}{% if row.entry.end_time %} – {{ row.entry.end_time|time:"g:i A" }}{% endif %}</span>
+                {% if row.status == "completed" %}
+                <span class="badge badge-soft-success badge-status">Completed</span>
+                {% elif row.status == "in_progress" %}
+                <span class="badge badge-soft-brand badge-status">In Progress</span>
+                {% elif row.status == "upcoming" %}
+                <span class="badge badge-soft-info badge-status">Upcoming</span>
+                {% else %}
+                <span class="badge badge-soft-warning badge-status">Pending</span>
+                {% endif %}
+              </div>
+              <div class="act-trainer">{{ row.entry.trainer.full_name }}</div>
+              <div class="act-meta">{{ row.entry.school_class }} · {{ row.entry.subject.name }}</div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+            {% include "partials/empty_state.html" with empty_icon="bi-calendar-x" empty_title="No classes scheduled today" empty_text="Add timetable entries to see trainer activity here." %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card mb-4">
+        <div class="card-header">
+          <div>
+            <div class="card-head-title">Upcoming Classes</div>
+            <div class="card-head-sub">Today's remaining sessions.</div>
+          </div>
+        </div>
+        <div class="card-body py-2">
+          {% if upcoming_classes %}
+            {% for row in upcoming_classes %}
+            <div class="mini-row">
+              <span class="mini-icon">{% if row.status == "in_progress" %}<i class="bi bi-play-fill"></i>{% else %}<i class="bi bi-calendar-event"></i>{% endif %}</span>
+              <div class="mini-body">
+                <div class="mini-title">{{ row.entry.school_class }} · {{ row.entry.subject.name }}</div>
+                <div class="mini-sub">{{ row.entry.trainer.full_name }}</div>
+              </div>
+              <span class="mini-time">{{ row.entry.start_time|time:"g:i A" }}</span>
+            </div>
+            {% endfor %}
+          {% else %}
+            {% include "partials/empty_state.html" with empty_icon="bi-calendar-check" empty_title="No upcoming classes" empty_text="All of today's classes have been covered." %}
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-head-title">Pending Reports</div>
+            <div class="card-head-sub">Sessions still awaiting a completed report.</div>
+          </div>
+        </div>
+        <div class="card-body py-2">
+          {% if pending_rows %}
+            {% for row in pending_rows %}
+            <div class="mini-row">
+              <span class="mini-icon" style="background:var(--warning-soft);color:var(--warning);"><i class="bi bi-hourglass-split"></i></span>
+              <div class="mini-body">
+                <div class="mini-title">{{ row.entry.trainer.full_name }}</div>
+                <div class="mini-sub">{{ row.entry.school_class }} · {{ row.entry.subject.name }}</div>
+              </div>
+              <span class="badge badge-soft-warning badge-status">Pending</span>
+            </div>
+            {% endfor %}
+          {% else %}
+            {% include "partials/empty_state.html" with empty_icon="bi-check2-circle" empty_title="All reports up to date" empty_text="No pending trainer reports right now." %}
+          {% endif %}
+        </div>
+      </div>
     </div>
   </div>
 </div>

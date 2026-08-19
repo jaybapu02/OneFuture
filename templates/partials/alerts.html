@@ -1,10 +1,19 @@
 {% if messages %}
-<div class="px-3 px-lg-4 pt-3">
+<div class="toast-wrap" role="status" aria-live="polite">
   {% for message in messages %}
-  <div class="alert alert-{{ message.tags|default:'info' }} alert-auto alert-dismissible fade show border-0 shadow-sm" role="alert">
-    {{ message }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  {% with tag=message.tags|default:'info' %}
+  <div class="app-toast app-toast--{{ tag }}" role="alert">
+    <span class="toast-ic">
+      {% if tag == 'success' %}<i class="bi bi-check-circle-fill"></i>
+      {% elif tag == 'error' %}<i class="bi bi-exclamation-triangle-fill"></i>
+      {% elif tag == 'warning' %}<i class="bi bi-exclamation-circle-fill"></i>
+      {% else %}<i class="bi bi-info-circle-fill"></i>
+      {% endif %}
+    </span>
+    <div class="toast-body">{{ message }}</div>
+    <button type="button" class="toast-x" data-dismiss-toast aria-label="Dismiss"><i class="bi bi-x-lg"></i></button>
   </div>
+  {% endwith %}
   {% endfor %}
 </div>
 {% endif %}

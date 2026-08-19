@@ -4,48 +4,59 @@
 {% block page_title %}Trainers{% endblock %}
 
 {% block content %}
-<div class="px-3 px-lg-4">
+<div class="px-3 px-lg-4 py-3">
   <div class="page-head d-flex flex-wrap align-items-center justify-content-between gap-2">
-    <h1>All Trainers</h1>
+    <div>
+      <h1>All Trainers</h1>
+      <div class="sub">Manage trainers and their assignments</div>
+    </div>
     <div class="d-flex gap-2">
       <a class="btn btn-soft" href="{% url 'trainers:school_list' %}"><i class="bi bi-building me-1"></i>Manage Schools</a>
       <a class="btn btn-brand" href="{% url 'trainers:trainer_create' %}"><i class="bi bi-person-plus me-1"></i>Add Trainer</a>
     </div>
   </div>
 
-  <form class="card mb-3" method="get">
-    <div class="card-body py-3">
-      <div class="row g-2">
-        <div class="col-12 col-md-5">
-          <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Search name, employee ID, username...">
+  <form class="card filter-card mb-3" method="get">
+    <div class="card-body">
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-md-6">
+          <label class="form-label mb-1" for="q-search">Search</label>
+          <input id="q-search" type="text" name="q" value="{{ query }}" class="form-control" placeholder="Search name, employee ID, username...">
         </div>
-        <div class="col-4 col-md-2">
-          <button class="btn btn-light w-100" type="submit">Search</button>
-        </div>
-        <div class="col-8 col-md-5 d-flex gap-2 align-items-center">
+        <div class="col-12 col-md-3 d-flex gap-1">
           <a class="chip {% if only_active %}active{% endif %}" href="?active=1">Active</a>
           <a class="chip {% if only_inactive %}active{% endif %}" href="?inactive=1">Inactive</a>
           <a class="chip" href="{% url 'trainers:trainer_list' %}">All</a>
+        </div>
+        <div class="col-12 col-md-3">
+          <button class="btn btn-light w-100" type="submit"><i class="bi bi-search me-1"></i>Search</button>
         </div>
       </div>
     </div>
   </form>
 
-  <div class="card">
+  {% if trainers %}
+  <div class="card d-none d-md-block">
     <div class="card-body p-0">
-      {% if trainers %}
       <div class="table-responsive">
         <table class="table table-hover mb-0">
           <thead>
-            <tr><th>Trainer</th><th>School</th><th>Employee ID</th><th>Username</th><th>Designation</th><th>Sessions</th><th>Status</th><th class="text-end">Actions</th></tr>
+            <tr><th>Trainer</th><th>School</th><th>Employee ID</th><th>Designation</th><th>Sessions</th><th>Status</th><th class="text-end">Actions</th></tr>
           </thead>
           <tbody>
             {% for trainer in trainers %}
             <tr>
-              <td class="fw-semibold">{{ trainer.full_name }}</td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="avatar">{{ trainer.full_name|slice:":1"|upper }}</span>
+                  <div>
+                    <div class="fw-semibold">{{ trainer.full_name }}</div>
+                    <div class="text-muted small">@{{ trainer.user.username }}</div>
+                  </div>
+                </div>
+              </td>
               <td>{{ trainer.school.name|default:"—" }}</td>
               <td>{{ trainer.employee_id }}</td>
-              <td>{{ trainer.user.username }}</td>
               <td>{{ trainer.designation|default:"—" }}</td>
               <td>{{ trainer.sessions_count }}</td>
               <td>
@@ -53,7 +64,7 @@
                 {% else %}<span class="badge badge-soft-muted">Inactive</span>{% endif %}
               </td>
               <td class="text-end text-nowrap">
-                <a class="btn btn-sm btn-light" href="{% url 'trainers:trainer_edit' trainer.pk %}"><i class="bi bi-pencil"></i></a>
+                <a class="btn btn-sm btn-light" href="{% url 'trainers:trainer_edit' trainer.pk %}" title="Edit"><i class="bi bi-pencil"></i></a>
                 <form class="d-inline" method="post" action="{% url 'trainers:trainer_toggle' trainer.pk %}">
                   {% csrf_token %}
                   {% if trainer.is_active %}
@@ -68,11 +79,47 @@
           </tbody>
         </table>
       </div>
-      {% else %}
-        {% include "partials/empty_state.html" with empty_icon="bi-people" empty_title="No trainers found" empty_text="Add your first trainer to get started." %}
-      {% endif %}
     </div>
   </div>
+
+  <div class="d-md-none">
+    {% for trainer in trainers %}
+    <div class="card mb-2">
+      <div class="card-body py-3">
+        <div class="d-flex align-items-center gap-3">
+          <span class="avatar" style="width:44px;height:44px;font-size:1rem;">{{ trainer.full_name|slice:":1"|upper }}</span>
+          <div class="flex-grow-1" style="min-width:0;">
+            <div class="fw-semibold">{{ trainer.full_name }}</div>
+            <div class="text-muted small text-truncate">{{ trainer.school.name|default:"No school" }} · {{ trainer.employee_id }}</div>
+            <div class="d-flex align-items-center gap-2 mt-1">
+              {% if trainer.is_active %}<span class="badge badge-soft-success">Active</span>
+              {% else %}<span class="badge badge-soft-muted">Inactive</span>{% endif %}
+              <span class="text-muted small">{{ trainer.sessions_count }} sessions</span>
+            </div>
+          </div>
+          <div class="d-flex flex-column gap-1">
+            <a class="btn btn-sm btn-light" href="{% url 'trainers:trainer_edit' trainer.pk %}" title="Edit"><i class="bi bi-pencil"></i></a>
+            <form method="post" action="{% url 'trainers:trainer_toggle' trainer.pk %}">
+              {% csrf_token %}
+              {% if trainer.is_active %}
+              <button class="btn btn-sm btn-light text-danger" title="Deactivate"><i class="bi bi-person-x"></i></button>
+              {% else %}
+              <button class="btn btn-sm btn-light text-success" title="Activate"><i class="bi bi-person-check"></i></button>
+              {% endif %}
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card">
+    <div class="card-body">
+      {% include "partials/empty_state.html" with empty_icon="bi-people" empty_title="No trainers found" empty_text="Add your first trainer to get started." %}
+    </div>
+  </div>
+  {% endif %}
 
   {% include "partials/pagination.html" with page_obj=trainers %}
 </div>

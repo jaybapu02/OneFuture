@@ -105,9 +105,10 @@
                           <div class="d-flex justify-content-between align-items-start gap-2">
                             <div>
                               <div class="tt-time">{{ cell.entry.start_time|time:"g:i A" }} – {{ cell.entry.end_time|time:"g:i A" }}</div>
-                              <div class="tt-class">{{ cell.entry.school_class }} · Period {{ cell.entry.period }}</div>
+                              <div class="tt-class">{{ cell.entry.school_class }} · Period {{ cell.entry.period }}
+                                {% if cell.entry.subject %} · {{ cell.entry.subject.name }}{% endif %}</div>
                             </div>
-                            {% if cell.completed %}<span class="badge badge-soft-success"><i class="bi bi-check-lg"></i></span>{% endif %}
+                            {% if cell.completed %}<span class="badge badge-soft-success"><i class="bi bi-check-lg"></i> Done</span>{% endif %}
                           </div>
                         </a>
                       {% endif %}

@@ -2,7 +2,7 @@ import datetime
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
@@ -32,6 +32,9 @@ def _greeting(now):
     if hour < 17:
         return "Good Afternoon"
     return "Good Evening"
+
+
+WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 
 
 def _trainer_dashboard(request):
@@ -134,6 +137,22 @@ def _trainer_dashboard(request):
     all_sessions = Session.objects.filter(trainer=profile)
     recent_sessions = all_sessions.order_by("-date", "-start_time", "-pk")[:5]
 
+    weekly_entries = (
+        Timetable.objects.filter(
+            trainer=profile, day_of_week__in=WEEKDAYS, is_active=True
+        )
+        .select_related("school_class", "subject")
+        .order_by("start_time")
+    )
+    week_preview = {day: [] for day in WEEKDAYS}
+    for entry in weekly_entries:
+        week_preview[entry.day_of_week].append(entry)
+
+    next_class = next(
+        (card for card in timetable_cards if card["status"] == "upcoming"),
+        None,
+    )
+
     context = {
         "greeting": _greeting(now),
         "today": today,
@@ -142,6 +161,9 @@ def _trainer_dashboard(request):
         "sessions_today": sessions_today,
         "recent_sessions": recent_sessions,
         "profile": profile,
+        "week_preview": week_preview,
+        "weekdays": WEEKDAYS,
+        "next_class": next_class,
         "stats": {
             "today_classes": len(timetable_cards),
             "completed_today": len(sessions_today),
@@ -149,6 +171,12 @@ def _trainer_dashboard(request):
             "weekly_classes": weekly_classes,
             "completed_sessions": all_sessions.count(),
             "classes_covered": all_sessions.values("school_class").distinct().count(),
+            "students_today": sum(
+                s.students_present for s in sessions_today
+            ),
+            "students_total": all_sessions.aggregate(
+                total=Sum("students_present")
+            )["total"] or 0,
         },
     }
     return render(request, "dashboard/trainer_dashboard.html", context)
@@ -157,6 +185,7 @@ def _trainer_dashboard(request):
 @staff_required
 def _admin_dashboard(request):
     today = timezone.localdate()
+    now = timezone.localtime()
     day_name = today.strftime("%A")
 
     trainers = TrainerProfile.objects.all()
@@ -175,12 +204,29 @@ def _admin_dashboard(request):
     )
 
     activity_rows = []
+    upcoming_classes = []
     for entry in today_entries:
         done = entry.pk in completed_session_timetable_ids
-        activity_rows.append({"entry": entry, "completed": done})
+        if done:
+            status = "completed"
+        elif entry.start_time <= now.time() <= entry.end_time:
+            status = "in_progress"
+        elif entry.start_time > now.time():
+            status = "upcoming"
+        else:
+            status = "pending"
+        row = {"entry": entry, "completed": done, "status": status}
+        activity_rows.append(row)
+        if status in ("in_progress", "upcoming"):
+            upcoming_classes.append(row)
 
     completed_today = Session.objects.filter(date=today).count()
     pending_reports = sum(1 for r in activity_rows if not r["completed"])
+    pending_rows = [r for r in activity_rows if not r["completed"]][:6]
+    recent_sessions = (
+        Session.objects.select_related("trainer", "school_class", "subject")
+        .order_by("-date", "-start_time", "-pk")[:5]
+    )
 
     stats = {
         "total_trainers": trainers.count(),
@@ -195,6 +241,9 @@ def _admin_dashboard(request):
         "today": today,
         "stats": stats,
         "activity_rows": activity_rows,
+        "upcoming_classes": upcoming_classes,
+        "pending_rows": pending_rows,
+        "recent_sessions": recent_sessions,
     }
     return render(request, "dashboard/admin_dashboard.html", context)
 

@@ -4,39 +4,42 @@
 {% block page_title %}Timetable Management{% endblock %}
 
 {% block content %}
-<div class="px-3 px-lg-4">
+<div class="px-3 px-lg-4 py-3">
   <div class="page-head d-flex flex-wrap align-items-center justify-content-between gap-2">
-    <h1>All Timetable Entries</h1>
+    <div>
+      <h1>All Timetable Entries</h1>
+      <div class="sub">Every scheduled class across trainers and schools</div>
+    </div>
     <a class="btn btn-brand" href="{% url 'timetable:manage_create' %}"><i class="bi bi-plus-lg me-1"></i>Add Entry</a>
   </div>
 
-  <form class="card mb-3" method="get">
-    <div class="card-body py-3">
-      <div class="row g-2">
+  <form class="card filter-card mb-3" method="get">
+    <div class="card-body">
+      <div class="row g-2 align-items-end">
         <div class="col-12 col-md-5">
-          <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Search trainer, class, subject, room...">
+          <label class="form-label mb-1" for="q-search">Search</label>
+          <input id="q-search" type="text" name="q" value="{{ query }}" class="form-control" placeholder="Search trainer, class, subject, room...">
         </div>
         <div class="col-6 col-md-3">
-          <select name="day" class="form-select">
+          <label class="form-label mb-1" for="day-filter">Day</label>
+          <select id="day-filter" name="day" class="form-select">
             <option value="">All days</option>
             {% for value, label in days %}
             <option value="{{ value }}" {% if day == value %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
           </select>
         </div>
-        <div class="col-6 col-md-2">
-          <button class="btn btn-light w-100" type="submit">Filter</button>
-        </div>
-        <div class="col-12 col-md-2">
-          <a class="btn btn-light w-100" href="{% url 'timetable:manage_list' %}">Reset</a>
+        <div class="col-6 col-md-4 d-flex gap-2">
+          <button class="btn btn-light flex-grow-1" type="submit"><i class="bi bi-funnel me-1"></i>Filter</button>
+          <a class="btn btn-light" href="{% url 'timetable:manage_list' %}"><i class="bi bi-arrow-counterclockwise"></i></a>
         </div>
       </div>
     </div>
   </form>
 
-  <div class="card">
+  {% if entries %}
+  <div class="card d-none d-md-block">
     <div class="card-body p-0">
-      {% if entries %}
       <div class="table-responsive">
         <table class="table table-hover mb-0">
           <thead>
@@ -45,26 +48,50 @@
           <tbody>
             {% for entry in entries %}
             <tr>
-              <td>{{ entry.get_day_of_week_display }}</td>
+              <td class="text-nowrap">{{ entry.get_day_of_week_display }}</td>
               <td class="text-nowrap">{{ entry.start_time|time:"g:i A" }} – {{ entry.end_time|time:"g:i A" }}</td>
               <td>{{ entry.trainer.full_name }}{% if not entry.is_active %} <span class="badge badge-soft-muted">Inactive</span>{% endif %}</td>
               <td>{{ entry.school_class }}</td>
               <td>{{ entry.subject.name }}</td>
               <td>{{ entry.room|default:"—" }}</td>
               <td class="text-end text-nowrap">
-                <a class="btn btn-sm btn-light" href="{% url 'timetable:manage_edit' entry.pk %}"><i class="bi bi-pencil"></i></a>
-                <button class="btn btn-sm btn-light text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ entry.pk }}"><i class="bi bi-trash"></i></button>
+                <a class="btn btn-sm btn-light" href="{% url 'timetable:manage_edit' entry.pk %}" title="Edit"><i class="bi bi-pencil"></i></a>
+                <button class="btn btn-sm btn-light text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ entry.pk }}" title="Delete"><i class="bi bi-trash"></i></button>
               </td>
             </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
-      {% else %}
-        {% include "partials/empty_state.html" with empty_icon="bi-clock-history" empty_title="No timetable entries found" empty_text="Create your first entry to start scheduling trainers." %}
-      {% endif %}
     </div>
   </div>
+
+  <div class="d-md-none">
+    {% for entry in entries %}
+    <div class="card mb-2">
+      <div class="card-body py-3">
+        <div class="d-flex align-items-start gap-2 mb-1">
+          <span class="badge badge-soft-info">{{ entry.get_day_of_week_display }}</span>
+          <span class="text-muted small ms-auto">{{ entry.start_time|time:"g:i A" }} – {{ entry.end_time|time:"g:i A" }}</span>
+        </div>
+        <div class="fw-semibold">{{ entry.school_class }}{% if entry.subject %} · {{ entry.subject.name }}{% endif %}</div>
+        <div class="text-muted small">{{ entry.trainer.full_name }}{% if entry.room %} · {{ entry.room }}{% endif %}
+          {% if not entry.is_active %} · <span class="badge badge-soft-muted">Inactive</span>{% endif %}</div>
+        <div class="d-flex gap-2 mt-2">
+          <a class="btn btn-sm btn-light" href="{% url 'timetable:manage_edit' entry.pk %}"><i class="bi bi-pencil me-1"></i>Edit</a>
+          <button class="btn btn-sm btn-light text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ entry.pk }}"><i class="bi bi-trash me-1"></i>Delete</button>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card">
+    <div class="card-body">
+      {% include "partials/empty_state.html" with empty_icon="bi-clock-history" empty_title="No timetable entries found" empty_text="Create your first entry to start scheduling trainers." %}
+    </div>
+  </div>
+  {% endif %}
 
   {% include "partials/pagination.html" with page_obj=entries %}
 
@@ -81,13 +108,13 @@
           <div class="mt-2 p-2 rounded" style="background:var(--bg);">
             <strong>{{ entry.trainer.full_name }}</strong> — {{ entry.get_day_of_week_display }} {{ entry.start_time|time:"g:i A" }} · {{ entry.school_class }} · {{ entry.subject.name }}
           </div>
-          <div class="text-danger small mt-2">This cannot be undone.</div>
+          <div class="text-danger small mt-2"><i class="bi bi-exclamation-triangle me-1"></i>This cannot be undone.</div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
           <form method="post" action="{% url 'timetable:manage_delete' entry.pk %}">
             {% csrf_token %}
-            <button type="submit" class="btn btn-danger">Delete</button>
+            <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Delete</button>
           </form>
         </div>
       </div>

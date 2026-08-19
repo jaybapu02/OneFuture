@@ -10,3 +10,12 @@ def page_url(context, page_number):
     params = request.GET.copy() if request else {}
     params["page"] = page_number
     return "?" + params.urlencode()
+
+
+@register.filter
+def get_item(mapping, key):
+    """Look up a key in a dictionary from a template."""
+    try:
+        return mapping[key]
+    except (KeyError, TypeError, IndexError):
+        return None
