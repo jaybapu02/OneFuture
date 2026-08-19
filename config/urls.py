@@ -23,7 +23,8 @@ def health(request):
 
 
 urlpatterns = [
-    path("health", health, name="health"),
+    path("health", health),
+    path("health/", health, name="health"),
     path("", RedirectView.as_view(pattern_name="dashboard", permanent=False)),
     path("dashboard/", dashboard, name="dashboard"),
     path("admin/", admin.site.urls),
