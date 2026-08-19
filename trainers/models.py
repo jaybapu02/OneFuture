@@ -37,9 +37,6 @@ class TrainerProfile(models.Model):
     employee_id = models.CharField(max_length=30, unique=True)
     full_name = models.CharField(max_length=120)
     phone_number = models.CharField(max_length=20, blank=True)
-    profile_photo = models.ImageField(
-        upload_to="profiles/", blank=True, null=True
-    )
     designation = models.CharField(max_length=120, blank=True)
     joining_date = models.DateField(null=True, blank=True)
     is_active = models.BooleanField(default=True)

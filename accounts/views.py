@@ -221,4 +221,4 @@ def profile_edit(request):
             return redirect("accounts:profile")
     else:
         form = ProfileEditForm(instance=profile)
-    return render(request, "accounts/profile_edit.html", {"form": form, "title": "Edit Profile", "cancel_url": "accounts:profile", "multipart": True})
+    return render(request, "accounts/profile_edit.html", {"form": form, "title": "Edit Profile", "cancel_url": "accounts:profile"})

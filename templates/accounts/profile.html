@@ -10,11 +10,7 @@
       <div class="card">
         <div class="card-body p-4">
           <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
-            {% if profile.profile_photo %}
-            <img src="{{ profile.profile_photo.url }}" alt="{{ profile.full_name }}" class="rounded-circle" style="width:72px;height:72px;object-fit:cover;">
-            {% else %}
             <span class="brand-mark" style="width:72px;height:72px;border-radius:50%;font-size:1.8rem;"><i class="bi bi-person"></i></span>
-            {% endif %}
             <div>
               <h5 class="mb-0">{{ profile.full_name }}</h5>
               <div class="text-muted">{{ profile.designation|default:"Trainer" }}</div>
