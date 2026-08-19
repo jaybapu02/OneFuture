@@ -1,0 +1,98 @@
+{% extends "app_base.html" %}
+
+{% block title %}Admin Dashboard · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="px-3 px-lg-4">
+  <div class="page-head">
+    <h1>Overview</h1>
+    <div class="sub"><i class="bi bi-calendar3 me-1"></i>{{ today|date:"l, d F Y" }}</div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-2">
+      <div class="card stat-card h-100">
+        <div class="card-body text-center py-3">
+          <div class="stat-value">{{ stats.total_trainers }}</div>
+          <div class="stat-label">Total Trainers</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-2">
+      <div class="card stat-card h-100">
+        <div class="card-body text-center py-3">
+          <div class="stat-value">{{ stats.active_trainers }}</div>
+          <div class="stat-label">Active Trainers</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-2">
+      <div class="card stat-card h-100">
+        <div class="card-body text-center py-3">
+          <div class="stat-value">{{ stats.total_classes }}</div>
+          <div class="stat-label">Total Classes</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-2">
+      <div class="card stat-card h-100">
+        <div class="card-body text-center py-3">
+          <div class="stat-value">{{ stats.today_classes }}</div>
+          <div class="stat-label">Today's Classes</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-2">
+      <div class="card stat-card h-100">
+        <div class="card-body text-center py-3">
+          <div class="stat-value">{{ stats.completed_today }}</div>
+          <div class="stat-label">Completed Today</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-2">
+      <div class="card stat-card h-100">
+        <div class="card-body text-center py-3">
+          <div class="stat-value {% if stats.pending_reports %}text-warning{% endif %}">{{ stats.pending_reports }}</div>
+          <div class="stat-label">Pending Reports</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Today's Trainer Activity</div>
+    <div class="card-body p-0">
+      {% if activity_rows %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr><th>Time</th><th>Trainer</th><th>Class</th><th>Subject</th><th class="text-end">Status</th></tr>
+          </thead>
+          <tbody>
+            {% for row in activity_rows %}
+            <tr>
+              <td class="text-nowrap">{{ row.entry.start_time|time:"g:i A" }}{% if row.entry.end_time %} – {{ row.entry.end_time|time:"g:i A" }}{% endif %}</td>
+              <td>{{ row.entry.trainer.full_name }}</td>
+              <td>{{ row.entry.school_class }}</td>
+              <td>{{ row.entry.subject.name }}</td>
+              <td class="text-end">
+                {% if row.completed %}
+                <span class="badge badge-soft-success">Completed</span>
+                {% else %}
+                <span class="badge badge-soft-warning">Report pending</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        {% include "partials/empty_state.html" with empty_icon="bi-calendar-x" empty_title="No classes scheduled today" empty_text="Add timetable entries to see trainer activity here." %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "app_base.html" %}
+
+{% block title %}Trainers · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Trainers{% endblock %}
+
+{% block content %}
+<div class="px-3 px-lg-4">
+  <div class="page-head d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <h1>All Trainers</h1>
+    <a class="btn btn-brand" href="{% url 'trainers:trainer_create' %}"><i class="bi bi-person-plus me-1"></i>Add Trainer</a>
+  </div>
+
+  <form class="card mb-3" method="get">
+    <div class="card-body py-3">
+      <div class="row g-2">
+        <div class="col-12 col-md-5">
+          <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Search name, employee ID, username...">
+        </div>
+        <div class="col-4 col-md-2">
+          <button class="btn btn-light w-100" type="submit">Search</button>
+        </div>
+        <div class="col-8 col-md-5 d-flex gap-2 align-items-center">
+          <a class="chip {% if only_active %}active{% endif %}" href="?active=1">Active</a>
+          <a class="chip {% if only_inactive %}active{% endif %}" href="?inactive=1">Inactive</a>
+          <a class="chip" href="{% url 'trainers:trainer_list' %}">All</a>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <div class="card">
+    <div class="card-body p-0">
+      {% if trainers %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr><th>Trainer</th><th>Employee ID</th><th>Username</th><th>Designation</th><th>Sessions</th><th>Status</th><th class="text-end">Actions</th></tr>
+          </thead>
+          <tbody>
+            {% for trainer in trainers %}
+            <tr>
+              <td class="fw-semibold">{{ trainer.full_name }}</td>
+              <td>{{ trainer.employee_id }}</td>
+              <td>{{ trainer.user.username }}</td>
+              <td>{{ trainer.designation|default:"—" }}</td>
+              <td>{{ trainer.sessions_count }}</td>
+              <td>
+                {% if trainer.is_active %}<span class="badge badge-soft-success">Active</span>
+                {% else %}<span class="badge badge-soft-muted">Inactive</span>{% endif %}
+              </td>
+              <td class="text-end text-nowrap">
+                <a class="btn btn-sm btn-light" href="{% url 'trainers:trainer_edit' trainer.pk %}"><i class="bi bi-pencil"></i></a>
+                <form class="d-inline" method="post" action="{% url 'trainers:trainer_toggle' trainer.pk %}">
+                  {% csrf_token %}
+                  {% if trainer.is_active %}
+                  <button class="btn btn-sm btn-light text-danger" title="Deactivate"><i class="bi bi-person-x"></i></button>
+                  {% else %}
+                  <button class="btn btn-sm btn-light text-success" title="Activate"><i class="bi bi-person-check"></i></button>
+                  {% endif %}
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        {% include "partials/empty_state.html" with empty_icon="bi-people" empty_title="No trainers found" empty_text="Add your first trainer to get started." %}
+      {% endif %}
+    </div>
+  </div>
+
+  {% include "partials/pagination.html" with page_obj=trainers %}
+</div>
+{% endblock %}

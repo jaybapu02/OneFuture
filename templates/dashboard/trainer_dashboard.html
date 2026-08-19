@@ -1,0 +1,163 @@
+{% extends "app_base.html" %}
+
+{% block title %}Dashboard · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="px-3 px-lg-4">
+  <div class="page-head d-flex flex-wrap align-items-end justify-content-between gap-2">
+    <div>
+      <h1>{{ greeting }}, {{ request.user.profile.full_name|default:request.user.username }}</h1>
+      <div class="sub"><i class="bi bi-calendar3 me-1"></i>{{ today|date:"l, d F Y" }}</div>
+    </div>
+    <a class="btn btn-soft" href="{% url 'timetable:my_timetable' %}"><i class="bi bi-calendar-week me-1"></i>My Timetable</a>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+      <div class="card stat-card h-100">
+        <div class="card-body d-flex align-items-center gap-3">
+          <span class="stat-icon" style="background:var(--brand-soft);color:var(--brand-dark);"><i class="bi bi-calendar-check"></i></span>
+          <div>
+            <div class="stat-label">Today's Classes</div>
+            <div class="stat-value">{{ stats.today_classes }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card stat-card h-100">
+        <div class="card-body d-flex align-items-center gap-3">
+          <span class="stat-icon" style="background:var(--success-soft);color:var(--success);"><i class="bi bi-journal-check"></i></span>
+          <div>
+            <div class="stat-label">Completed Sessions</div>
+            <div class="stat-value">{{ stats.completed_today }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card stat-card h-100">
+        <div class="card-body d-flex align-items-center gap-3">
+          <span class="stat-icon" style="background:var(--warning-soft);color:var(--warning);"><i class="bi bi-list-task"></i></span>
+          <div>
+            <div class="stat-label">Pending Tasks</div>
+            <div class="stat-value">{{ stats.pending_tasks }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card stat-card h-100">
+        <div class="card-body d-flex align-items-center gap-3">
+          <span class="stat-icon" style="background:var(--info-soft);color:var(--info);"><i class="bi bi-people"></i></span>
+          <div>
+            <div class="stat-label">Students Present Today</div>
+            <div class="stat-value">{{ stats.students_today }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span>Today's Timetable</span>
+          <span class="text-muted small">{{ today|date:"l" }}</span>
+        </div>
+        <div class="card-body">
+          {% if timetable_cards %}
+            {% for card in timetable_cards %}
+            <div class="tt-card {% if card.status == 'current' %}current{% endif %} mb-3">
+              <div class="d-flex flex-wrap align-items-center gap-2">
+                <div class="tt-time me-2">
+                  {% if card.entry.start_time %}{{ card.entry.start_time|time:"g:i A" }}{% endif %}
+                  {% if card.entry.end_time %}&ndash; {{ card.entry.end_time|time:"g:i A" }}{% endif %}
+                </div>
+                <span class="ms-auto badge {% if card.status == 'completed' %}badge-soft-success{% elif card.status == 'current' %}badge-soft-brand{% elif card.status == 'upcoming' %}badge-soft-info{% else %}badge-soft-muted{% endif %}">
+                  <span class="status-dot {{ card.status }}"></span>
+                  {% if card.status == 'completed' %}Completed{% elif card.status == 'current' %}Current{% elif card.status == 'upcoming' %}Upcoming{% else %}Done for today{% endif %}
+                </span>
+              </div>
+              <div class="mt-2">
+                <div class="tt-subject">{{ card.entry.subject.name }}</div>
+                <div class="tt-class"><i class="bi bi-mortarboard me-1"></i>{{ card.entry.school_class }}
+                  {% if card.entry.room %}<span class="ms-2"><i class="bi bi-geo-alt me-1"></i>{{ card.entry.room }}</span>{% endif %}
+                </div>
+              </div>
+              <div class="mt-3 d-flex flex-wrap gap-2">
+                {% if card.status != 'completed' %}
+                  <a class="btn btn-brand btn-sm" href="{% url 'sessions:session_complete' card.entry.pk %}"><i class="bi bi-check2-circle me-1"></i>Complete Session</a>
+                  <a class="btn btn-soft btn-sm" href="{% url 'tasks:task_create' %}?timetable={{ card.entry.pk }}"><i class="bi bi-plus-lg me-1"></i>Assign Task</a>
+                {% else %}
+                  <a class="btn btn-soft btn-sm" href="{% url 'sessions:session_detail' card.session.pk %}"><i class="bi bi-eye me-1"></i>View Session</a>
+                  <a class="btn btn-soft btn-sm" href="{% url 'tasks:task_create' %}?timetable={{ card.entry.pk }}"><i class="bi bi-plus-lg me-1"></i>Assign Task</a>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+            {% include "partials/empty_state.html" with empty_icon="bi-calendar-x" empty_title="No classes scheduled for today" empty_text="Enjoy the free time, or use it to catch up on tasks." %}
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card mt-4">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span>Today's Tasks</span>
+          <a class="small" href="{% url 'tasks:task_list' %}">View all</a>
+        </div>
+        <div class="card-body">
+          {% if tasks_today %}
+            {% for task in tasks_today %}
+            <div class="d-flex align-items-start gap-3 py-2 border-bottom {% if forloop.last %}border-0{% endif %}">
+              <span class="badge {% if task.status == 'Completed' %}badge-soft-success{% elif task.status == 'In Progress' %}badge-soft-info{% else %}badge-soft-warning{% endif %} mt-1">{{ task.status }}</span>
+              <div class="flex-grow-1">
+                <div class="fw-semibold">{{ task.title }}</div>
+                <div class="text-muted small">{{ task.school_class }} · {{ task.subject.name }}
+                  {% if task.start_time %} · {{ task.start_time|time:"g:i A" }}{% endif %}</div>
+              </div>
+              <span class="badge {% if task.priority == 'High' %}badge-soft-danger{% elif task.priority == 'Medium' %}badge-soft-warning{% else %}badge-soft-muted{% endif %}">{{ task.priority }}</span>
+            </div>
+            {% endfor %}
+          {% else %}
+            {% include "partials/empty_state.html" with empty_icon="bi-check2-square" empty_title="No tasks today" empty_text="Assign a task from any class in your timetable." %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span>Today's Sessions</span>
+          <a class="small" href="{% url 'sessions:session_list' %}">View all</a>
+        </div>
+        <div class="card-body">
+          {% if sessions_today %}
+            {% for session in sessions_today %}
+            <a href="{% url 'sessions:session_detail' session.pk %}" class="text-decoration-none text-reset">
+              <div class="d-flex align-items-center gap-3 py-2 border-bottom {% if forloop.last %}border-0{% endif %}">
+                <span class="badge badge-soft-brand">Session {{ session.session_number }}</span>
+                <div class="flex-grow-1">
+                  <div class="fw-semibold">{{ session.school_class }} · {{ session.subject.name }}</div>
+                  <div class="text-muted small">
+                    {{ session.students_present }} students
+                    {% if session.start_time %} · {{ session.start_time|time:"g:i A" }}{% endif %}
+                  </div>
+                </div>
+                <i class="bi bi-chevron-right text-muted"></i>
+              </div>
+            </a>
+            {% endfor %}
+          {% else %}
+            {% include "partials/empty_state.html" with empty_icon="bi-journal-text" empty_title="No sessions recorded yet today" empty_text="Completed sessions will appear here." %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

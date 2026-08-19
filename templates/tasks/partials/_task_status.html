@@ -1,0 +1,16 @@
+{% load static %}
+{% if task.status == "Completed" %}
+<span class="badge badge-soft-success">{{ task.status }}</span>
+<button class="btn btn-sm btn-light"
+        hx-post="{% url 'tasks:task_toggle' task.pk %}"
+        hx-target="#task-{{ task.pk }}"
+        hx-swap="outerHTML"
+        title="Reopen task"><i class="bi bi-arrow-counterclockwise"></i></button>
+{% else %}
+<span class="badge {% if task.status == 'In Progress' %}badge-soft-info{% else %}badge-soft-warning{% endif %}">{{ task.status }}</span>
+<button class="btn btn-sm btn-outline-brand"
+        hx-post="{% url 'tasks:task_toggle' task.pk %}"
+        hx-target="#task-{{ task.pk }}"
+        hx-swap="outerHTML"
+        title="Mark complete"><i class="bi bi-check-lg"></i></button>
+{% endif %}

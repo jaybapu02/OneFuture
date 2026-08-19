@@ -1,0 +1,111 @@
+{% extends "app_base.html" %}
+
+{% block title %}Tasks · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Tasks{% endblock %}
+
+{% block content %}
+<div class="px-3 px-lg-4">
+  <div class="page-head d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <h1>My Tasks</h1>
+    <a class="btn btn-brand" href="{% url 'tasks:task_create' %}"><i class="bi bi-plus-lg me-1"></i>New Task</a>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    <a class="chip {% if filter_key == '' %}active{% endif %}" href="{% url 'tasks:task_list' %}">All</a>
+    <a class="chip {% if filter_key == 'today' %}active{% endif %}" href="?f=today">Today</a>
+    <a class="chip {% if filter_key == 'upcoming' %}active{% endif %}" href="?f=upcoming">Upcoming</a>
+    <a class="chip {% if filter_key == 'pending' %}active{% endif %}" href="?f=pending">Pending</a>
+    <a class="chip {% if filter_key == 'completed' %}active{% endif %}" href="?f=completed">Completed</a>
+  </div>
+
+  <form class="card mb-3" method="get">
+    <div class="card-body py-3">
+      <div class="row g-2">
+        <div class="col-12 col-md-3">
+          <select name="class" class="form-select">
+            <option value="">All classes</option>
+            {% for cls in classes %}
+            <option value="{{ cls.pk }}" {% if class_id == cls.pk|stringformat:"s" %}selected{% endif %}>{{ cls }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-3">
+          <select name="subject" class="form-select">
+            <option value="">All subjects</option>
+            {% for subject in subjects %}
+            <option value="{{ subject.pk }}" {% if subject_id == subject.pk|stringformat:"s" %}selected{% endif %}>{{ subject.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-md-3">
+          <input type="date" name="date" value="{{ date_str }}" class="form-control">
+        </div>
+        <div class="col-6 col-md-3 d-flex gap-2">
+          <button class="btn btn-light flex-grow-1" type="submit">Filter</button>
+          <a class="btn btn-light" href="{% url 'tasks:task_list' %}">Reset</a>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  {% if tasks %}
+    {% for task in tasks %}
+    <div class="card mb-3" id="task-{{ task.pk }}">
+      <div class="card-body py-3">
+        <div class="d-flex flex-wrap align-items-start gap-3">
+          <div class="flex-grow-1" style="min-width: 200px;">
+            <div class="fw-semibold">
+              {% if task.status == "Completed" %}<s class="text-muted">{{ task.title }}</s>{% else %}{{ task.title }}{% endif %}
+            </div>
+            <div class="text-muted small mt-1">
+              <i class="bi bi-mortarboard me-1"></i>{{ task.school_class }}
+              <span class="mx-1">·</span><i class="bi bi-book me-1"></i>{{ task.subject.name }}
+              <span class="mx-1">·</span><i class="bi bi-calendar3 me-1"></i>{{ task.date|date:"d M Y" }}
+              {% if task.start_time %}<span class="mx-1">·</span><i class="bi bi-clock me-1"></i>{{ task.start_time|time:"g:i A" }}{% endif %}
+            </div>
+            {% if task.description %}<div class="text-muted small mt-1">{{ task.description }}</div>{% endif %}
+          </div>
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="badge {% if task.priority == 'High' %}badge-soft-danger{% elif task.priority == 'Medium' %}badge-soft-warning{% else %}badge-soft-muted{% endif %}">{{ task.priority }}</span>
+            {% include "tasks/partials/_task_status.html" %}
+            <a class="btn btn-sm btn-light" href="{% url 'tasks:task_edit' task.pk %}"><i class="bi bi-pencil"></i></a>
+            <button class="btn btn-sm btn-light text-danger" data-bs-toggle="modal" data-bs-target="#deleteTask{{ task.pk }}"><i class="bi bi-trash"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="deleteTask{{ task.pk }}" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header"><h5 class="modal-title">Delete task</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            Are you sure you want to delete this task?
+            <div class="mt-2 fw-semibold">{{ task.title }}</div>
+            <div class="text-danger small mt-2">This cannot be undone.</div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+            <form method="post" action="{% url 'tasks:task_delete' task.pk %}">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{% url 'tasks:task_list' %}">
+              <button type="submit" class="btn btn-danger">Delete</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+
+    {% include "partials/pagination.html" with page_obj=tasks %}
+  {% else %}
+    <div class="card">
+      <div class="card-body">
+        {% include "partials/empty_state.html" with empty_icon="bi-check2-square" empty_title="No tasks found" empty_text="Create a task from any class in your timetable." %}
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,7 @@
+{% if empty_title or empty_text %}
+<div class="empty-state">
+  <span class="empty-icon"><i class="bi {% if empty_icon %}{{ empty_icon }}{% else %}bi-inbox{% endif %}"></i></span>
+  {% if empty_title %}<h6>{{ empty_title }}</h6>{% endif %}
+  {% if empty_text %}<div>{{ empty_text }}</div>{% endif %}
+</div>
+{% endif %}

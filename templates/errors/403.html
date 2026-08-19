@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Forbidden · {{ SITE_NAME }}{% endblock %}
+{% block body %}
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="card">
+      <div class="card-body text-center py-5 px-4">
+        <div class="display-5 fw-bold" style="color:var(--warning);">403</div>
+        <h5 class="mt-2">You don't have permission to access this page</h5>
+        <p class="text-muted">If you believe this is a mistake, please contact your administrator.</p>
+        <a href="{% url 'dashboard' %}" class="btn btn-brand">Back to dashboard</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

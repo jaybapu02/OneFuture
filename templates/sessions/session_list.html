@@ -1,0 +1,117 @@
+{% extends "app_base.html" %}
+
+{% block title %}Sessions · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Sessions{% endblock %}
+
+{% block content %}
+<div class="px-3 px-lg-4">
+  <div class="page-head">
+    <h1>{% if is_staff %}All Sessions{% else %}My Session History{% endif %}</h1>
+  </div>
+
+  <form class="card mb-3" method="get">
+    <div class="card-body py-3">
+      <div class="row g-2">
+        <div class="col-6 col-md-2">
+          <label class="form-label mb-1">From</label>
+          <input type="date" name="from" value="{{ date_from }}" class="form-control">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label mb-1">To</label>
+          <input type="date" name="to" value="{{ date_to }}" class="form-control">
+        </div>
+        {% if is_staff %}
+        <div class="col-6 col-md-3">
+          <label class="form-label mb-1">Trainer</label>
+          <select name="trainer" class="form-select">
+            <option value="">All trainers</option>
+            {% for trainer in trainers %}
+            <option value="{{ trainer.pk }}" {% if trainer_id == trainer.pk|stringformat:"s" %}selected{% endif %}>{{ trainer.full_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+        <div class="col-6 col-md-2">
+          <label class="form-label mb-1">Class</label>
+          <select name="class" class="form-select">
+            <option value="">All classes</option>
+            {% for cls in classes %}
+            <option value="{{ cls.pk }}" {% if class_id == cls.pk|stringformat:"s" %}selected{% endif %}>{{ cls }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label mb-1">Subject</label>
+          <select name="subject" class="form-select">
+            <option value="">All subjects</option>
+            {% for subject in subjects %}
+            <option value="{{ subject.pk }}" {% if subject_id == subject.pk|stringformat:"s" %}selected{% endif %}>{{ subject.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-1 d-flex align-items-end gap-2">
+          <button class="btn btn-light flex-grow-1" type="submit">Filter</button>
+          <a class="btn btn-light" href="{% url 'sessions:session_list' %}">Reset</a>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  {% if sessions %}
+  <div class="card d-none d-md-block">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr><th>Date</th><th>Class</th><th>Subject</th><th>Session</th><th>Students</th><th>Topic</th>{% if is_staff %}<th>Trainer</th>{% endif %}<th class="text-end"></th></tr>
+          </thead>
+          <tbody>
+            {% for session in sessions %}
+            <tr>
+              <td class="text-nowrap">{{ session.date|date:"d M Y" }}</td>
+              <td>{{ session.school_class }}</td>
+              <td>{{ session.subject.name }}</td>
+              <td><span class="badge badge-soft-brand">Session {{ session.session_number }}</span></td>
+              <td>{{ session.students_present }}</td>
+              <td class="text-truncate" style="max-width: 260px;" title="{{ session.topic_taught }}">{{ session.topic_taught }}</td>
+              {% if is_staff %}<td>{{ session.trainer.full_name }}</td>{% endif %}
+              <td class="text-end">
+                <a class="btn btn-sm btn-soft" href="{% url 'sessions:session_detail' session.pk %}">View</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-md-none">
+    {% for session in sessions %}
+    <a href="{% url 'sessions:session_detail' session.pk %}" class="text-decoration-none text-reset">
+      <div class="card mb-2">
+        <div class="card-body py-3">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="badge badge-soft-brand">Session {{ session.session_number }}</span>
+            <span class="text-muted small">{{ session.date|date:"d M Y" }}</span>
+          </div>
+          <div class="fw-semibold">{{ session.school_class }} · {{ session.subject.name }}</div>
+          <div class="text-muted small mt-1"><i class="bi bi-people me-1"></i>{{ session.students_present }} students</div>
+          <div class="text-muted small text-truncate mt-1">{{ session.topic_taught }}</div>
+          {% if is_staff %}<div class="text-muted small mt-1"><i class="bi bi-person me-1"></i>{{ session.trainer.full_name }}</div>{% endif %}
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+
+  {% include "partials/pagination.html" with page_obj=sessions %}
+  {% else %}
+  <div class="card">
+    <div class="card-body">
+      {% include "partials/empty_state.html" with empty_icon="bi-journal-text" empty_title="No sessions recorded yet" empty_text="Completed sessions will appear here. Record your first session from the dashboard." %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,111 @@
+{% extends "app_base.html" %}
+
+{% block title %}{% if mode == 'complete' %}Complete Session{% else %}Edit Session{% endif %} · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}{% if mode == 'complete' %}Complete Session{% else %}Edit Session{% endif %}{% endblock %}
+
+{% block content %}
+<div class="px-3 px-lg-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-7">
+      <div class="card mb-3">
+        <div class="card-body py-3">
+          {% if mode == 'complete' %}
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+            <span class="badge badge-soft-brand fs-6"><i class="bi bi-journal-plus me-1"></i>Session Number: {{ next_number }}</span>
+            <span class="badge badge-soft-info fs-6">{{ timetable.school_class }}</span>
+            <span class="badge badge-soft-muted fs-6">{{ timetable.subject.name }}</span>
+          </div>
+          <div class="text-muted small"><i class="bi bi-info-circle me-1"></i>This session number is assigned automatically. Class, subject and trainer come from your timetable.</div>
+          {% else %}
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="badge badge-soft-brand fs-6"><i class="bi bi-journal me-1"></i>Session {{ session.session_number }}</span>
+            <span class="badge badge-soft-info fs-6">{{ session.school_class }}</span>
+            <span class="badge badge-soft-muted fs-6">{{ session.subject.name }}</span>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">{% if mode == 'complete' %}Class report{% else %}Edit session report{% endif %}</div>
+        <div class="card-body">
+          {% if form.non_field_errors %}
+            {% for error in form.non_field_errors %}
+            <div class="alert alert-danger py-2"><i class="bi bi-exclamation-triangle me-1"></i>{{ error }}</div>
+            {% endfor %}
+          {% endif %}
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if mode == 'complete' %}
+            <div class="row g-3 mb-2">
+              <div class="col-6">
+                <label class="form-label" for="{{ form.date.id_for_label }}">Date</label>
+                {{ form.date }}
+              </div>
+              <div class="col-6">
+                <label class="form-label" for="{{ form.students_present.id_for_label }}">Students Present</label>
+                {{ form.students_present }}
+              </div>
+              <div class="col-6">
+                <label class="form-label" for="{{ form.start_time.id_for_label }}">Start time</label>
+                {{ form.start_time }}
+              </div>
+              <div class="col-6">
+                <label class="form-label" for="{{ form.end_time.id_for_label }}">End time</label>
+                {{ form.end_time }}
+              </div>
+            </div>
+            {% else %}
+            <div class="row g-3 mb-2">
+              <div class="col-6 col-md-3">
+                <label class="form-label" for="{{ form.date.id_for_label }}">Date</label>
+                {{ form.date }}
+              </div>
+              <div class="col-6 col-md-3">
+                <label class="form-label" for="{{ form.students_present.id_for_label }}">Students Present</label>
+                {{ form.students_present }}
+              </div>
+              <div class="col-6 col-md-3">
+                <label class="form-label" for="{{ form.start_time.id_for_label }}">Start time</label>
+                {{ form.start_time }}
+              </div>
+              <div class="col-6 col-md-3">
+                <label class="form-label" for="{{ form.end_time.id_for_label }}">End time</label>
+                {{ form.end_time }}
+              </div>
+            </div>
+            {% endif %}
+
+            {% for error in form.students_present.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+            {% for error in form.date.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+            {% for error in form.start_time.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+            {% for error in form.end_time.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+
+            <div class="mb-3">
+              <label class="form-label" for="{{ form.topic_taught.id_for_label }}">What Was Taught?</label>
+              {{ form.topic_taught }}
+              {% for error in form.topic_taught.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="{{ form.activity.id_for_label }}">Activity / Project <span class="text-muted fw-normal">(optional)</span></label>
+              {{ form.activity }}
+              {% for error in form.activity.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="{{ form.notes.id_for_label }}">Additional Notes <span class="text-muted fw-normal">(optional)</span></label>
+              {{ form.notes }}
+              {% for error in form.notes.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+            </div>
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-brand px-4 py-2">{% if mode == 'complete' %}Save Session{% else %}Save changes{% endif %}</button>
+              <a href="{% if mode == 'complete' %}{% url 'dashboard' %}{% else %}{% url 'sessions:session_detail' session.pk %}{% endif %}" class="btn btn-light">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

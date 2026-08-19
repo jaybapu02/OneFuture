@@ -1,0 +1,149 @@
+{% extends "app_base.html" %}
+
+{% block title %}My Reports · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}My Reports{% endblock %}
+
+{% block content %}
+<div class="px-3 px-lg-4">
+  <div class="page-head">
+    <h1>My Report</h1>
+    <div class="sub">Your session activity summary</div>
+  </div>
+
+  <form class="card mb-4" method="get">
+    <div class="card-body py-3">
+      <div class="row g-2">
+        <div class="col-6 col-md-3">
+          <input type="date" name="from" value="{{ filters.from }}" class="form-control">
+        </div>
+        <div class="col-6 col-md-3">
+          <input type="date" name="to" value="{{ filters.to }}" class="form-control">
+        </div>
+        <div class="col-6 col-md-2">
+          <select name="class" class="form-select">
+            <option value="">All classes</option>
+            {% for cls in classes %}
+            <option value="{{ cls.pk }}" {% if filters.class == cls.pk|stringformat:"s" %}selected{% endif %}>{{ cls }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <select name="subject" class="form-select">
+            <option value="">All subjects</option>
+            {% for subject in subjects %}
+            <option value="{{ subject.pk }}" {% if filters.subject == subject.pk|stringformat:"s" %}selected{% endif %}>{{ subject.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-2 d-flex gap-2">
+          <button class="btn btn-light flex-grow-1" type="submit">Filter</button>
+          <a class="btn btn-light" href="{% url 'reports:report' %}">Reset</a>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+      <div class="card stat-card h-100"><div class="card-body text-center py-3">
+        <div class="stat-value">{{ metrics.total_sessions }}</div><div class="stat-label">Total Sessions</div>
+      </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card stat-card h-100"><div class="card-body text-center py-3">
+        <div class="stat-value">{{ metrics.total_students }}</div><div class="stat-label">Students Present</div>
+      </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card stat-card h-100"><div class="card-body text-center py-3">
+        <div class="stat-value">{{ metrics.avg_attendance }}</div><div class="stat-label">Avg Attendance</div>
+      </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card stat-card h-100"><div class="card-body text-center py-3">
+        <div class="stat-value">{{ metrics.classes_handled }}</div><div class="stat-label">Classes Handled</div>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card">
+        <div class="card-header">Sessions over time</div>
+        <div class="card-body">
+          <canvas id="sessionsChart" height="220"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="card">
+        <div class="card-header">Classes handled</div>
+        <div class="card-body p-0">
+          {% if classes_handled %}
+          <table class="table mb-0">
+            <thead><tr><th>Class</th><th class="text-end">Sessions</th></tr></thead>
+            <tbody>
+              {% for row in classes_handled %}
+              <tr>
+                <td>{{ row.school_class__name }}{% if row.school_class__section %} - {{ row.school_class__section }}{% endif %}</td>
+                <td class="text-end">{{ row.count }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div class="text-muted small text-center py-4">No data for the selected period.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt-4">
+    <div class="card-header">Recent topics covered</div>
+    <div class="card-body">
+      {% if topics %}
+      <div class="row g-2">
+        {% for topic in topics %}
+        <div class="col-12 col-md-6 col-lg-4">
+          <div class="p-2 rounded" style="background:var(--bg);">{{ topic }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-muted small text-center py-3">No topics recorded yet.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  var data = {{ chart|safe }};
+  var ctx = document.getElementById("sessionsChart");
+  if (!ctx) return;
+  new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: data.labels,
+      datasets: [{
+        label: "Sessions",
+        data: data.data,
+        backgroundColor: "rgba(79, 70, 229, 0.25)",
+        borderColor: "#4f46e5",
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+    }
+  });
+})();
+</script>
+{% endblock %}

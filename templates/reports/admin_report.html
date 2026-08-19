@@ -1,0 +1,159 @@
+{% extends "app_base.html" %}
+
+{% block title %}Reports · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Reports{% endblock %}
+
+{% block content %}
+<div class="px-3 px-lg-4">
+  <div class="page-head">
+    <h1>Organization Report</h1>
+    <div class="sub">All trainers, classes and sessions</div>
+  </div>
+
+  <form class="card mb-4" method="get">
+    <div class="card-body py-3">
+      <div class="row g-2">
+        <div class="col-6 col-md-2">
+          <label class="form-label mb-1">From</label>
+          <input type="date" name="from" value="{{ filters.from }}" class="form-control">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label mb-1">To</label>
+          <input type="date" name="to" value="{{ filters.to }}" class="form-control">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label mb-1">Trainer</label>
+          <select name="trainer" class="form-select">
+            <option value="">All trainers</option>
+            {% for trainer in trainers %}
+            <option value="{{ trainer.pk }}" {% if filters.trainer == trainer.pk|stringformat:"s" %}selected{% endif %}>{{ trainer.full_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label mb-1">Class</label>
+          <select name="class" class="form-select">
+            <option value="">All classes</option>
+            {% for cls in classes %}
+            <option value="{{ cls.pk }}" {% if filters.class == cls.pk|stringformat:"s" %}selected{% endif %}>{{ cls }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label mb-1">Subject</label>
+          <select name="subject" class="form-select">
+            <option value="">All subjects</option>
+            {% for subject in subjects %}
+            <option value="{{ subject.pk }}" {% if filters.subject == subject.pk|stringformat:"s" %}selected{% endif %}>{{ subject.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-2 d-flex align-items-end gap-2">
+          <button class="btn btn-light flex-grow-1" type="submit">Filter</button>
+          <a class="btn btn-light" href="{% url 'reports:report' %}">Reset</a>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+      <div class="card stat-card h-100"><div class="card-body text-center py-3">
+        <div class="stat-value">{{ metrics.total_sessions }}</div><div class="stat-label">Total Sessions</div>
+      </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card stat-card h-100"><div class="card-body text-center py-3">
+        <div class="stat-value">{{ metrics.total_students }}</div><div class="stat-label">Total Attendance</div>
+      </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card stat-card h-100"><div class="card-body text-center py-3">
+        <div class="stat-value">{{ metrics.avg_attendance }}</div><div class="stat-label">Avg Attendance</div>
+      </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card stat-card h-100"><div class="card-body text-center py-3">
+        <div class="stat-value">{{ metrics.active_trainers }}</div><div class="stat-label">Active Trainers</div>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="card">
+        <div class="card-header">Sessions by trainer</div>
+        <div class="card-body"><canvas id="byTrainerChart" height="200"></canvas></div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card">
+        <div class="card-header">Sessions by class</div>
+        <div class="card-body"><canvas id="byClassChart" height="200"></canvas></div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card">
+        <div class="card-header">Sessions over time</div>
+        <div class="card-body"><canvas id="overTimeChart" height="200"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  var timeData = {{ chart|safe }};
+
+  var ctx = document.getElementById("byTrainerChart");
+  if (ctx) {
+    var labels = [], data = [];
+    {% for row in by_trainer|slice:":10" %}
+    labels.push("{{ row.trainer__full_name|escapejs }}");
+    data.push({{ row.count }});
+    {% endfor %}
+    new Chart(ctx, {
+      type: "bar",
+      data: { labels: labels, datasets: [{ label: "Sessions", data: data, backgroundColor: "rgba(79, 70, 229, 0.55)", borderRadius: 4 }] },
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+    });
+  }
+
+  var ctx2 = document.getElementById("byClassChart");
+  if (ctx2) {
+    var labels2 = [], data2 = [];
+    {% for row in by_class|slice:":10" %}
+    labels2.push("{{ row.school_class__name|escapejs }}{% if row.school_class__section %} - {{ row.school_class__section|escapejs }}{% endif %}");
+    data2.push({{ row.count }});
+    {% endfor %}
+    new Chart(ctx2, {
+      type: "bar",
+      data: { labels: labels2, datasets: [{ label: "Sessions", data: data2, backgroundColor: "rgba(37, 99, 235, 0.55)", borderRadius: 4 }] },
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+    });
+  }
+
+  var ctx3 = document.getElementById("overTimeChart");
+  if (ctx3) {
+    new Chart(ctx3, {
+      type: "line",
+      data: {
+        labels: timeData.labels,
+        datasets: [{
+          label: "Sessions",
+          data: timeData.data,
+          borderColor: "#4f46e5",
+          backgroundColor: "rgba(79, 70, 229, 0.08)",
+          fill: true,
+          tension: 0.3
+        }]
+      },
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+    });
+  }
+})();
+</script>
+{% endblock %}

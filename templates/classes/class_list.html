@@ -1,0 +1,72 @@
+{% extends "app_base.html" %}
+
+{% block title %}Classes · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Classes{% endblock %}
+
+{% block content %}
+<div class="px-3 px-lg-4">
+  <div class="page-head d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <h1>All Classes</h1>
+    <a class="btn btn-brand" href="{% url 'classes:class_create' %}"><i class="bi bi-plus-lg me-1"></i>Add Class</a>
+  </div>
+
+  <form class="card mb-3" method="get">
+    <div class="card-body py-3">
+      <div class="row g-2">
+        <div class="col-12 col-md-5">
+          <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Search class...">
+        </div>
+        <div class="col-4 col-md-2">
+          <button class="btn btn-light w-100" type="submit">Search</button>
+        </div>
+        <div class="col-8 col-md-5 text-end">
+          <a class="btn btn-soft" href="{% url 'classes:subject_list' %}"><i class="bi bi-book me-1"></i>Manage Subjects</a>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <div class="card">
+    <div class="card-body p-0">
+      {% if classes %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr><th>Class</th><th>Grade</th><th>Section</th><th>Timetable Entries</th><th>Status</th><th class="text-end">Actions</th></tr>
+          </thead>
+          <tbody>
+            {% for cls in classes %}
+            <tr>
+              <td class="fw-semibold">{{ cls.name }}</td>
+              <td>{{ cls.grade|default:"—" }}</td>
+              <td>{{ cls.section|default:"—" }}</td>
+              <td>{{ cls.timetable_count }}</td>
+              <td>
+                {% if cls.is_active %}<span class="badge badge-soft-success">Active</span>
+                {% else %}<span class="badge badge-soft-muted">Inactive</span>{% endif %}
+              </td>
+              <td class="text-end text-nowrap">
+                <a class="btn btn-sm btn-light" href="{% url 'classes:class_edit' cls.pk %}"><i class="bi bi-pencil"></i></a>
+                <form class="d-inline" method="post" action="{% url 'classes:class_toggle' cls.pk %}">
+                  {% csrf_token %}
+                  {% if cls.is_active %}
+                  <button class="btn btn-sm btn-light text-danger" title="Deactivate"><i class="bi bi-x-circle"></i></button>
+                  {% else %}
+                  <button class="btn btn-sm btn-light text-success" title="Activate"><i class="bi bi-check-circle"></i></button>
+                  {% endif %}
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        {% include "partials/empty_state.html" with empty_icon="bi-mortarboard" empty_title="No classes found" empty_text="Create your first class to get started." %}
+      {% endif %}
+    </div>
+  </div>
+
+  {% include "partials/pagination.html" with page_obj=classes %}
+</div>
+{% endblock %}

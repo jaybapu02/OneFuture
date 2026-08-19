@@ -1,0 +1,51 @@
+{% with url_name=request.resolver_match.url_name %}
+<span class="sidebar-brand">
+  <span class="brand-mark"><i class="bi bi-mortarboard-fill"></i></span>
+  {{ SITE_NAME }}
+</span>
+
+<nav class="nav flex-column flex-grow-1">
+  <div class="nav-section">Main</div>
+  <a class="nav-link {% if url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
+    <i class="bi bi-speedometer2"></i> Dashboard
+  </a>
+  <a class="nav-link {% if url_name == 'my_timetable' %}active{% endif %}" href="{% url 'timetable:my_timetable' %}">
+    <i class="bi bi-calendar-week"></i> My Timetable
+  </a>
+  <a class="nav-link {% if url_name == 'task_list' %}active{% endif %}" href="{% url 'tasks:task_list' %}">
+    <i class="bi bi-check2-square"></i> Tasks
+  </a>
+  <a class="nav-link {% if url_name == 'session_list' %}active{% endif %}" href="{% url 'sessions:session_list' %}">
+    <i class="bi bi-journal-check"></i> Sessions
+  </a>
+  <a class="nav-link {% if url_name == 'report' %}active{% endif %}" href="{% url 'reports:report' %}">
+    <i class="bi bi-graph-up"></i> Reports
+  </a>
+
+  {% if request.user.is_staff %}
+  <div class="nav-section">Administration</div>
+  <a class="nav-link {% if url_name == 'trainer_list' %}active{% endif %}" href="{% url 'trainers:trainer_list' %}">
+    <i class="bi bi-people"></i> Trainers
+  </a>
+  <a class="nav-link {% if url_name == 'class_list' %}active{% endif %}" href="{% url 'classes:class_list' %}">
+    <i class="bi bi-mortarboard"></i> Classes
+  </a>
+  <a class="nav-link {% if url_name == 'subject_list' %}active{% endif %}" href="{% url 'classes:subject_list' %}">
+    <i class="bi bi-book"></i> Subjects
+  </a>
+  <a class="nav-link {% if url_name == 'manage_list' %}active{% endif %}" href="{% url 'timetable:manage_list' %}">
+    <i class="bi bi-clock-history"></i> Timetable
+  </a>
+  <a class="nav-link" href="/admin/" target="_blank" rel="noopener">
+    <i class="bi bi-gear"></i> Django Admin
+  </a>
+  {% endif %}
+</nav>
+
+<form class="logout-form" method="post" action="{% url 'accounts:logout' %}">
+  {% csrf_token %}
+  <button type="submit" class="nav-link w-100 text-start text-danger">
+    <i class="bi bi-box-arrow-right"></i> Logout
+  </button>
+</form>
+{% endwith %}
