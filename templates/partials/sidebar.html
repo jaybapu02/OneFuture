@@ -1,6 +1,7 @@
+{% load static %}
 {% with url_name=request.resolver_match.url_name %}
 <span class="sidebar-brand">
-  <span class="brand-mark"><i class="bi bi-mortarboard-fill"></i></span>
+  <img src="{% static 'img/logo.jpeg' %}" class="brand-logo" alt="{{ SITE_NAME }}">
   {{ SITE_NAME }}
 </span>
 

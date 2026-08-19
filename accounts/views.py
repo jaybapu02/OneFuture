@@ -10,7 +10,7 @@ from django.views.decorators.http import require_http_methods
 from classes.models import SchoolClass
 from sessions.models import Session
 from tasks.models import Task
-from timetable.models import Timetable
+from timetable.models import ManualClass, Timetable, TimetableOccurrenceRemoval
 from trainers.models import TrainerProfile
 
 from .permissions import get_trainer_profile, staff_required, trainer_required
@@ -40,12 +40,23 @@ def _trainer_dashboard(request):
     now = timezone.localtime()
     day_name = today.strftime("%A")
 
+    removed_ids = set(
+        TimetableOccurrenceRemoval.objects.filter(date=today)
+        .values_list("timetable_id", flat=True)
+    )
     entries = (
         Timetable.objects.filter(
             trainer=profile, day_of_week=day_name, is_active=True
         )
         .select_related("school_class", "subject")
-        .order_by("start_time")
+        .order_by("period", "start_time")
+    )
+    recurring = [e for e in entries if e.pk not in removed_ids]
+
+    manual = list(
+        ManualClass.objects.filter(
+            trainer=profile, date=today, is_active=True
+        ).select_related("school_class", "subject")
     )
 
     sessions_today = list(
@@ -58,7 +69,7 @@ def _trainer_dashboard(request):
     }
 
     timetable_cards = []
-    for entry in entries:
+    for entry in recurring:
         session = session_ids_by_timetable.get(entry.pk)
         if session:
             status = "completed"
@@ -68,7 +79,45 @@ def _trainer_dashboard(request):
             status = "upcoming"
         else:
             status = "past"
-        timetable_cards.append({"entry": entry, "session": session, "status": status})
+        timetable_cards.append(
+            {
+                "entry": entry,
+                "session": session,
+                "status": status,
+                "is_manual": False,
+                "manual": None,
+                "period": entry.period,
+                "start_time": entry.start_time,
+                "end_time": entry.end_time,
+            }
+        )
+    for m in manual:
+        session = next(
+            (s for s in sessions_today if s.school_class_id == m.school_class_id),
+            None,
+        )
+        status = (
+            "completed"
+            if session
+            else (
+                "current"
+                if m.start_time <= now.time() <= m.end_time
+                else ("upcoming" if m.start_time > now.time() else "past")
+            )
+        )
+        timetable_cards.append(
+            {
+                "entry": None,
+                "session": session,
+                "status": status,
+                "is_manual": True,
+                "manual": m,
+                "period": m.period,
+                "start_time": m.start_time,
+                "end_time": m.end_time,
+            }
+        )
+    timetable_cards.sort(key=lambda c: c["start_time"])
 
     tasks_today = (
         Task.objects.filter(trainer=profile, date=today)
@@ -79,6 +128,12 @@ def _trainer_dashboard(request):
         status=Task.Status.COMPLETED
     )
     students_today = sum(s.students_present for s in sessions_today)
+    weekly_classes = Timetable.objects.filter(
+        trainer=profile, is_active=True
+    ).count()
+
+    all_sessions = Session.objects.filter(trainer=profile)
+    recent_sessions = all_sessions.order_by("-date", "-start_time", "-pk")[:5]
 
     context = {
         "greeting": _greeting(now),
@@ -86,11 +141,19 @@ def _trainer_dashboard(request):
         "timetable_cards": timetable_cards,
         "tasks_today": tasks_today,
         "sessions_today": sessions_today,
+        "recent_sessions": recent_sessions,
+        "profile": profile,
         "stats": {
             "today_classes": len(timetable_cards),
             "completed_today": len(sessions_today),
             "pending_tasks": open_tasks.count(),
             "students_today": students_today,
+            "weekly_classes": weekly_classes,
+            "completed_sessions": all_sessions.count(),
+            "students_total": all_sessions.aggregate(
+                total=Sum("students_present")
+            )["total"] or 0,
+            "classes_covered": all_sessions.values("school_class").distinct().count(),
         },
     }
     return render(request, "dashboard/trainer_dashboard.html", context)

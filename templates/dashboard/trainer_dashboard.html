@@ -8,7 +8,10 @@
   <div class="page-head d-flex flex-wrap align-items-end justify-content-between gap-2">
     <div>
       <h1>{{ greeting }}, {{ request.user.profile.full_name|default:request.user.username }}</h1>
-      <div class="sub"><i class="bi bi-calendar3 me-1"></i>{{ today|date:"l, d F Y" }}</div>
+      <div class="sub">
+        <i class="bi bi-calendar3 me-1"></i>{{ today|date:"l, d F Y" }}
+        {% if profile.school %} · <i class="bi bi-building me-1"></i>{{ profile.school }}{% endif %}
+      </div>
     </div>
     <a class="btn btn-soft" href="{% url 'timetable:my_timetable' %}"><i class="bi bi-calendar-week me-1"></i>My Timetable</a>
   </div>
@@ -31,7 +34,7 @@
           <span class="stat-icon" style="background:var(--success-soft);color:var(--success);"><i class="bi bi-journal-check"></i></span>
           <div>
             <div class="stat-label">Completed Sessions</div>
-            <div class="stat-value">{{ stats.completed_today }}</div>
+            <div class="stat-value">{{ stats.completed_sessions }}</div>
           </div>
         </div>
       </div>
@@ -39,10 +42,10 @@
     <div class="col-6 col-lg-3">
       <div class="card stat-card h-100">
         <div class="card-body d-flex align-items-center gap-3">
-          <span class="stat-icon" style="background:var(--warning-soft);color:var(--warning);"><i class="bi bi-list-task"></i></span>
+          <span class="stat-icon" style="background:var(--warning-soft);color:var(--warning);"><i class="bi bi-mortarboard"></i></span>
           <div>
-            <div class="stat-label">Pending Tasks</div>
-            <div class="stat-value">{{ stats.pending_tasks }}</div>
+            <div class="stat-label">Classes Covered</div>
+            <div class="stat-value">{{ stats.classes_covered }}</div>
           </div>
         </div>
       </div>
@@ -52,8 +55,8 @@
         <div class="card-body d-flex align-items-center gap-3">
           <span class="stat-icon" style="background:var(--info-soft);color:var(--info);"><i class="bi bi-people"></i></span>
           <div>
-            <div class="stat-label">Students Present Today</div>
-            <div class="stat-value">{{ stats.students_today }}</div>
+            <div class="stat-label">Students Present</div>
+            <div class="stat-value">{{ stats.students_total }}</div>
           </div>
         </div>
       </div>
@@ -64,8 +67,10 @@
     <div class="col-lg-7">
       <div class="card">
         <div class="card-header d-flex align-items-center justify-content-between">
-          <span>Today's Timetable</span>
-          <span class="text-muted small">{{ today|date:"l" }}</span>
+          <span>Today's Classes</span>
+          <span class="text-muted small">
+            {{ today|date:"l" }} · <strong>{{ stats.weekly_classes }}</strong> classes per week
+          </span>
         </div>
         <div class="card-body">
           {% if timetable_cards %}
@@ -73,33 +78,49 @@
             <div class="tt-card {% if card.status == 'current' %}current{% endif %} mb-3">
               <div class="d-flex flex-wrap align-items-center gap-2">
                 <div class="tt-time me-2">
-                  {% if card.entry.start_time %}{{ card.entry.start_time|time:"g:i A" }}{% endif %}
-                  {% if card.entry.end_time %}&ndash; {{ card.entry.end_time|time:"g:i A" }}{% endif %}
+                  {{ card.start_time|time:"g:i A" }} – {{ card.end_time|time:"g:i A" }}
                 </div>
+                {% if card.is_manual %}
+                <span class="badge badge-soft-warning">Manual</span>
+                {% else %}
+                <span class="badge badge-soft-muted">Period {{ card.period }}</span>
+                {% endif %}
                 <span class="ms-auto badge {% if card.status == 'completed' %}badge-soft-success{% elif card.status == 'current' %}badge-soft-brand{% elif card.status == 'upcoming' %}badge-soft-info{% else %}badge-soft-muted{% endif %}">
                   <span class="status-dot {{ card.status }}"></span>
                   {% if card.status == 'completed' %}Completed{% elif card.status == 'current' %}Current{% elif card.status == 'upcoming' %}Upcoming{% else %}Done for today{% endif %}
                 </span>
               </div>
               <div class="mt-2">
-                <div class="tt-subject">{{ card.entry.subject.name }}</div>
-                <div class="tt-class"><i class="bi bi-mortarboard me-1"></i>{{ card.entry.school_class }}
-                  {% if card.entry.room %}<span class="ms-2"><i class="bi bi-geo-alt me-1"></i>{{ card.entry.room }}</span>{% endif %}
+                <div class="tt-class">
+                  <i class="bi bi-mortarboard me-1"></i>
+                  {% if card.is_manual %}{{ card.manual.school_class }}{% else %}{{ card.entry.school_class }}{% endif %}
+                  {% if not card.is_manual and card.entry.subject %}<span class="text-muted small">· {{ card.entry.subject.name }}</span>{% endif %}
+                  {% if card.is_manual and card.manual.subject %}<span class="text-muted small">· {{ card.manual.subject.name }}</span>{% endif %}
                 </div>
               </div>
               <div class="mt-3 d-flex flex-wrap gap-2">
                 {% if card.status != 'completed' %}
-                  <a class="btn btn-brand btn-sm" href="{% url 'sessions:session_complete' card.entry.pk %}"><i class="bi bi-check2-circle me-1"></i>Complete Session</a>
-                  <a class="btn btn-soft btn-sm" href="{% url 'tasks:task_create' %}?timetable={{ card.entry.pk }}"><i class="bi bi-plus-lg me-1"></i>Assign Task</a>
+                  {% if card.is_manual %}
+                    <a class="btn btn-brand btn-sm" href="{% url 'sessions:session_complete_manual' card.manual.pk %}"><i class="bi bi-check2-circle me-1"></i>Complete Session</a>
+                    <a class="btn btn-soft btn-sm" href="{% url 'tasks:task_create' %}?manual={{ card.manual.pk }}"><i class="bi bi-plus-lg me-1"></i>Assign Task</a>
+                  {% else %}
+                    <a class="btn btn-brand btn-sm" href="{% url 'sessions:session_complete' card.entry.pk %}"><i class="bi bi-check2-circle me-1"></i>Complete Session</a>
+                    <a class="btn btn-soft btn-sm" href="{% url 'tasks:task_create' %}?timetable={{ card.entry.pk }}"><i class="bi bi-plus-lg me-1"></i>Assign Task</a>
+                  {% endif %}
                 {% else %}
-                  <a class="btn btn-soft btn-sm" href="{% url 'sessions:session_detail' card.session.pk %}"><i class="bi bi-eye me-1"></i>View Session</a>
-                  <a class="btn btn-soft btn-sm" href="{% url 'tasks:task_create' %}?timetable={{ card.entry.pk }}"><i class="bi bi-plus-lg me-1"></i>Assign Task</a>
+                  {% if card.is_manual %}
+                    <a class="btn btn-soft btn-sm" href="{% url 'sessions:session_detail' card.session.pk %}"><i class="bi bi-eye me-1"></i>View Session</a>
+                    <a class="btn btn-soft btn-sm" href="{% url 'tasks:task_create' %}?manual={{ card.manual.pk }}"><i class="bi bi-plus-lg me-1"></i>Assign Task</a>
+                  {% else %}
+                    <a class="btn btn-soft btn-sm" href="{% url 'sessions:session_detail' card.session.pk %}"><i class="bi bi-eye me-1"></i>View Session</a>
+                    <a class="btn btn-soft btn-sm" href="{% url 'tasks:task_create' %}?timetable={{ card.entry.pk }}"><i class="bi bi-plus-lg me-1"></i>Assign Task</a>
+                  {% endif %}
                 {% endif %}
               </div>
             </div>
             {% endfor %}
           {% else %}
-            {% include "partials/empty_state.html" with empty_icon="bi-calendar-x" empty_title="No classes scheduled for today" empty_text="Enjoy the free time, or use it to catch up on tasks." %}
+            {% include "partials/empty_state.html" with empty_icon="bi-calendar-x" empty_title="No classes scheduled for today" empty_text="Today's classes come from your weekly timetable. Upload it from My Timetable if it is not set up yet." %}
           {% endif %}
         </div>
       </div>
@@ -155,6 +176,43 @@
           {% else %}
             {% include "partials/empty_state.html" with empty_icon="bi-journal-text" empty_title="No sessions recorded yet today" empty_text="Completed sessions will appear here." %}
           {% endif %}
+        </div>
+      </div>
+    <div class="card mt-4">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span>Recent Sessions</span>
+          <a class="small" href="{% url 'sessions:session_list' %}?month={{ today|date:'Y-m' }}">View all</a>
+        </div>
+        <div class="card-body">
+          {% if recent_sessions %}
+            {% for session in recent_sessions %}
+            <a href="{% url 'sessions:session_detail' session.pk %}" class="text-decoration-none text-reset">
+              <div class="d-flex align-items-center gap-3 py-2 border-bottom {% if forloop.last %}border-0{% endif %}">
+                <span class="badge badge-soft-brand text-nowrap">{{ session.date|date:"d M" }}</span>
+                <div class="flex-grow-1">
+                  <div class="fw-semibold">{{ session.school_class }} · Session {{ session.session_number|default:"—" }}</div>
+                  <div class="text-muted small text-truncate">{{ session.topic_taught }}</div>
+                </div>
+                <span class="text-muted small text-nowrap"><i class="bi bi-people me-1"></i>{{ session.students_present }}</span>
+              </div>
+            </a>
+            {% endfor %}
+          {% else %}
+            {% include "partials/empty_state.html" with empty_icon="bi-journal-text" empty_title="No sessions recorded yet" empty_text="Your session history will appear here." %}
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card mt-4">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span>Pending Tasks</span>
+          <a class="small" href="{% url 'tasks:task_list' %}">View all</a>
+        </div>
+        <div class="card-body">
+          <div class="text-center py-2">
+            <div class="stat-value">{{ stats.pending_tasks }}</div>
+            <div class="text-muted small">open task{% if stats.pending_tasks != 1 %}s{% endif %}</div>
+          </div>
         </div>
       </div>
     </div>

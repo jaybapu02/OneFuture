@@ -1,4 +1,4 @@
-// TrainerHub - small helpers (no framework required).
+// OneFuture - small helpers (no framework required).
 
 // Auto-dismiss success messages.
 document.addEventListener("DOMContentLoaded", function () {

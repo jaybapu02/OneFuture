@@ -1,0 +1,75 @@
+{% extends "app_base.html" %}
+
+{% block title %}Upload Weekly Timetable · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Upload Weekly Timetable{% endblock %}
+
+{% block content %}
+<div class="px-3 px-lg-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-7">
+      <div class="card mb-3">
+        <div class="card-header">Step 1 — Select the .xlsx file</div>
+        <div class="card-body">
+          <p class="text-muted mb-3">
+            The uploaded timetable belongs to <strong>you</strong> and your school —
+            no trainer name is needed in the file.
+          </p>
+          {% if form.non_field_errors %}
+            {% for error in form.non_field_errors %}
+            <div class="alert alert-danger py-2"><i class="bi bi-exclamation-triangle me-1"></i>{{ error }}</div>
+            {% endfor %}
+          {% endif %}
+          <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label" for="{{ form.file.id_for_label }}">{{ form.file.label }}</label>
+              {{ form.file }}
+              {% for error in form.file.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+              {% if form.file.help_text %}<div class="form-text">{{ form.file.help_text }}</div>{% endif %}
+            </div>
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-brand px-4">Parse &amp; Preview</button>
+              <a href="{% url 'timetable:my_timetable' %}" class="btn btn-light">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">Structure expected</div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-bordered table-sm mb-3 text-center">
+              <thead>
+                <tr><th>Day</th><th>Period 4</th><th>Period 5</th><th>Period 6</th><th>Period 7</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Monday</td>
+                  <td><code>7th — 12:30–1:15</code></td>
+                  <td>—</td>
+                  <td><code>5th — 2:00–2:40</code></td>
+                  <td><code>8th — 3:20–4:00</code></td>
+                </tr>
+                <tr>
+                  <td>Tuesday</td>
+                  <td>—</td>
+                  <td>—</td>
+                  <td><code>3rd — 2:40–3:20</code></td>
+                  <td><code>6th — 3:20–4:00</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <ul class="text-muted small mb-0">
+            <li>Leave a cell empty or use <code>—</code> when there is no class.</li>
+            <li>Additional <code>Period N</code> columns are detected automatically.</li>
+            <li>Separators <code>—</code>, <code>–</code>, <code>-</code>, <code>|</code> are accepted.</li>
+            <li>Download the <a href="{% url 'timetable:download_template' %}">template</a> to start from the correct structure.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -74,9 +74,11 @@ class TimetableFormTests(TestCase):
             "school_class": self.cls_a.pk,
             "subject": self.subject.pk,
             "day_of_week": "Monday",
+            "period": "4",
             "start_time": "09:00",
             "end_time": "10:00",
             "room": "",
+            "source": "MANUAL",
             "is_active": "on",
         }
         data.update(overrides)
@@ -151,9 +153,11 @@ class TimetableAdminViewsTests(TestCase):
                 "school_class": self.cls_a.pk,
                 "subject": self.subject.pk,
                 "day_of_week": "Wednesday",
+                "period": "4",
                 "start_time": "09:00",
                 "end_time": "10:00",
                 "room": "Lab 1",
+                "source": "MANUAL",
                 "is_active": "on",
             },
         )

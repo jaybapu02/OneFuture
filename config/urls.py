@@ -1,5 +1,5 @@
 """
-Root URL configuration for the TrainerHub project.
+Root URL configuration for the OneFuture project.
 """
 from django.conf import settings
 from django.conf.urls.static import static

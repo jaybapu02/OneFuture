@@ -1,5 +1,5 @@
 """
-ASGI config for the TrainerHub project.
+ASGI config for the OneFuture project.
 """
 import os
 

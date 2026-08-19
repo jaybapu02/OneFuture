@@ -1,0 +1,85 @@
+{% extends "app_base.html" %}
+
+{% block title %}Preview Weekly Timetable · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Preview Weekly Timetable{% endblock %}
+
+{% block content %}
+<div class="px-3 px-lg-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-10 col-xl-9">
+      <div class="card mb-3">
+        <div class="card-body py-3 d-flex flex-wrap align-items-center gap-2">
+          <span class="badge badge-soft-brand fs-6"><i class="bi bi-check-circle me-1"></i>{{ detected }} classes detected</span>
+          {% if periods %}
+          <span class="badge badge-soft-info fs-6">Periods: {% for p in periods %}P{{ p }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+          {% endif %}
+          {% if has_existing %}
+          <span class="badge badge-soft-warning fs-6"><i class="bi bi-arrow-repeat me-1"></i>This will replace your current weekly timetable</span>
+          {% endif %}
+          <span class="ms-auto text-muted small"><i class="bi bi-info-circle me-1"></i>Recurring — repeats every week</span>
+        </div>
+      </div>
+
+      {% if errors %}
+      <div class="alert alert-warning">
+        <strong><i class="bi bi-exclamation-triangle me-1"></i>Some cells could not be read</strong>
+        <ul class="mb-0 mt-1">
+          {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <div class="card mb-3">
+        <div class="card-header">Step 2 — Review parsed classes</div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Day</th><th>Period</th><th>Class</th><th>Start</th><th>End</th><th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in rows %}
+                <tr>
+                  <td>{{ row.day }}</td>
+                  <td>P{{ row.period }}</td>
+                  <td>{{ row.class_name }}</td>
+                  <td>{{ row.start_time|time:"g:i A" }}</td>
+                  <td>{{ row.end_time|time:"g:i A" }}</td>
+                  <td><span class="badge badge-soft-success"><i class="bi bi-check-lg me-1"></i>Valid</span></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">Step 3 — Confirm import</div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="confirm" value="1">
+            <p class="text-muted mb-3">
+              {% if has_existing %}
+              Confirming <strong>replaces</strong> your current weekly timetable. Your
+              historical sessions and tasks are <strong>not</strong> deleted.
+              {% else %}
+              Confirming saves this as your recurring weekly timetable. Your
+              dashboard will automatically show today's classes from it.
+              {% endif %}
+            </p>
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-brand px-4"><i class="bi bi-check2-circle me-1"></i>Confirm Import</button>
+              <a href="{% url 'timetable:upload_timetable' %}" class="btn btn-light">Upload a different file</a>
+              <a href="{% url 'timetable:my_timetable' %}" class="btn btn-light">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

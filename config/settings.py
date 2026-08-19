@@ -1,5 +1,5 @@
 """
-Django settings for the TrainerHub project.
+Django settings for the OneFuture project.
 
 All sensitive and environment-specific values are read from environment
 variables (or a local .env file). Nothing is hardcoded.

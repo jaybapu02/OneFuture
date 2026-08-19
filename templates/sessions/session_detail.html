@@ -16,9 +16,15 @@
 
           <div class="detail-row"><span class="k">Class</span><span class="v">{{ session.school_class }}</span></div>
           <div class="detail-row"><span class="k">Subject</span><span class="v">{{ session.subject.name }}</span></div>
-          <div class="detail-row"><span class="k">Date</span><span class="v">{{ session.date|date:"d F Y" }}</span></div>
-          <div class="detail-row"><span class="k">Time</span><span class="v">{% if session.start_time %}{{ session.start_time|time:"g:i A" }}{% endif %}{% if session.end_time %} – {{ session.end_time|time:"g:i A" }}{% endif %}</span></div>
-          <div class="detail-row"><span class="k">Students Present</span><span class="v">{{ session.students_present }}</span></div>
+          <div class="detail-row"><span class="k">Date</span><span class="v">{{ session.date|date:"d F Y" }} <span class="text-muted small">({{ session.date|date:"l" }})</span></span></div>
+          <div class="detail-row"><span class="k">Time</span><span class="v">{% if session.start_time %}{{ session.start_time|time:"g:i A" }}{% endif %}{% if session.end_time %} – {{ session.end_time|time:"g:i A" }}{% endif %}{% if not session.start_time %}—{% endif %}</span></div>
+          {% if session.location %}
+          <div class="detail-row"><span class="k">Location</span><span class="v">{{ session.location }}</span></div>
+          {% endif %}
+          {% if session.school %}
+          <div class="detail-row"><span class="k">School</span><span class="v">{{ session.school.name }}</span></div>
+          {% endif %}
+          <div class="detail-row"><span class="k">Students</span><span class="v">{{ session.students_present }} present{% if session.total_students is not None %} · {{ session.total_students }} total{% endif %}{% if session.students_absent is not None %} · {{ session.students_absent }} absent{% endif %}</span></div>
           {% if can_delete %}
           <div class="detail-row"><span class="k">Trainer</span><span class="v">{{ session.trainer.full_name }}</span></div>
           {% endif %}

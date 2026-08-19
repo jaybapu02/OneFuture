@@ -8,50 +8,149 @@
   <div class="page-head d-flex flex-wrap align-items-center justify-content-between gap-2">
     <div>
       <h1>Weekly Timetable</h1>
-      <div class="sub">{{ week_start|date:"d M Y" }} – {{ week_end|date:"d M Y" }}</div>
+      <div class="sub">
+        {{ week_start|date:"d M Y" }} – {{ week_end|date:"d M Y" }} ·
+        {% if request.user.profile.school %}{{ request.user.profile.school }}{% else %}No school assigned{% endif %} ·
+        <span class="fw-semibold">{{ weekly_count }} classes per week</span>
+      </div>
     </div>
-    <div class="d-flex gap-2">
-      <a class="btn btn-light" href="{% url 'timetable:my_timetable' %}?week={{ prev_week|date:"Y-m-d" }}"><i class="bi bi-chevron-left"></i></a>
-      <a class="btn btn-light" href="{% url 'timetable:my_timetable' %}">This week</a>
-      <a class="btn btn-light" href="{% url 'timetable:my_timetable' %}?week={{ next_week|date:"Y-m-d" }}"><i class="bi bi-chevron-right"></i></a>
+    <div class="d-flex flex-wrap gap-2">
+      <div class="d-flex gap-1">
+        <a class="btn btn-light" href="{% url 'timetable:my_timetable' %}?week={{ prev_week|date:"Y-m-d" }}"><i class="bi bi-chevron-left"></i></a>
+        <a class="btn btn-light" href="{% url 'timetable:my_timetable' %}">This week</a>
+        <a class="btn btn-light" href="{% url 'timetable:my_timetable' %}?week={{ next_week|date:"Y-m-d" }}"><i class="bi bi-chevron-right"></i></a>
+      </div>
+      <a class="btn btn-soft" href="{% url 'timetable:download_template' %}"><i class="bi bi-download me-1"></i>Template</a>
+      <a class="btn btn-soft" href="{% url 'timetable:assign_manual_class' %}"><i class="bi bi-plus-lg me-1"></i>Assign Class</a>
+      <a class="btn btn-brand" href="{% url 'timetable:upload_timetable' %}"><i class="bi bi-upload me-1"></i>Upload Weekly Timetable</a>
     </div>
   </div>
 
   <div class="row g-3">
-    {% for day in days_data %}
-    <div class="col-12 col-md-6 col-xl">
-      <div class="card h-100">
-        <div class="card-header {% if day.is_today %}text-primary{% endif %}">
-          <div class="d-flex justify-content-between align-items-center">
-            <span>{{ day.date|date:"l" }}</span>
-            <span class="text-muted small fw-normal">{{ day.date|date:"d M" }}</span>
-          </div>
+    <div class="col-12 col-xl-9">
+      <div class="card">
+        <div class="card-header">
+          <span>Recurring Weekly Timetable</span>
+          <span class="text-muted small fw-normal">Repeats every week · {{ weekly_count }} classes</span>
         </div>
         <div class="card-body">
-          {% if day.entries %}
-            {% for item in day.entries %}
-              <div class="tt-card mb-2 {% if day.is_today %}current{% endif %}">
-                <div class="d-flex justify-content-between align-items-start gap-2">
-                  <div>
-                    <div class="tt-time">{{ item.entry.start_time|time:"g:i A" }}{% if item.entry.end_time %} – {{ item.entry.end_time|time:"g:i A" }}{% endif %}</div>
-                    <div class="tt-subject mt-1">{{ item.entry.subject.name }}</div>
-                    <div class="tt-class">{{ item.entry.school_class }}{% if item.entry.room %} · {{ item.entry.room }}{% endif %}</div>
-                  </div>
-                  {% if item.completed %}
-                  <span class="badge badge-soft-success"><i class="bi bi-check-lg"></i></span>
-                  {% else %}
-                  <a class="btn btn-brand btn-sm" href="{% url 'sessions:session_complete' item.entry.pk %}">Complete</a>
+          {% if weekly_count == 0 %}
+          <div class="d-none d-md-block">
+            {% include "partials/empty_state.html" with empty_icon="bi-calendar-x" empty_title="No weekly timetable yet" empty_text="Upload your weekly Excel timetable to set up your recurring classes." %}
+          </div>
+          {% else %}
+          <div class="table-responsive d-none d-md-block">
+            <table class="table table-bordered align-middle mb-0 timetable-grid">
+              <thead>
+                <tr>
+                  <th class="tt-day-col">Day</th>
+                  {% for pc in period_columns %}
+                  <th class="text-center">P{{ pc.period }}</th>
+                  {% endfor %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for day in grid %}
+                <tr>
+                  <th class="tt-day-col">
+                    {{ day }}
+                    {% if day == today|date:"l" %}<span class="badge badge-soft-brand ms-1">Today</span>{% endif %}
+                  </th>
+                  {% for pc in period_columns %}
+                  <td class="text-center {% if day == today|date:'l' %}today-col{% endif %}">
+                    {% for cell_day, day_entries in pc.cells.items %}
+                      {% if cell_day == day %}
+                        {% for cell in day_entries %}
+                          {% if cell.removed %}
+                            <span class="tt-muted small"><s>Removed {{ cell.date|date:"d M" }}</s></span>
+                          {% else %}
+                            <a class="tt-cell d-block text-decoration-none" href="{% url 'timetable:class_detail' cell.entry.pk %}{% if cell.date %}?date={{ cell.date|date:'Y-m-d' }}{% endif %}">
+                              <span class="tt-cell-class">{{ cell.entry.school_class }}</span>
+                              <span class="tt-cell-time">{{ cell.entry.start_time|time:"g:i A" }} – {{ cell.entry.end_time|time:"g:i A" }}</span>
+                              {% if cell.completed %}
+                              <span class="badge badge-soft-success mt-1"><i class="bi bi-check-lg me-1"></i>Completed</span>
+                              {% endif %}
+                            </a>
+                          {% endif %}
+                        {% endfor %}
+                      {% endif %}
+                    {% endfor %}
+                  </td>
+                  {% endfor %}
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% endif %}
+
+          <div class="d-md-none">
+            {% if weekly_count == 0 %}
+              {% include "partials/empty_state.html" with empty_icon="bi-calendar-x" empty_title="No weekly timetable yet" empty_text="Upload your weekly Excel timetable to set up your recurring classes." %}
+            {% else %}
+            {% for day in grid %}
+            <div class="tt-day-block mb-3">
+              <div class="tt-day-heading">
+                {{ day }}
+                {% if day == today|date:"l" %}<span class="badge badge-soft-brand ms-1">Today</span>{% endif %}
+              </div>
+              {% for pc in period_columns %}
+                {% for cell_day, day_entries in pc.cells.items %}
+                  {% if cell_day == day %}
+                    {% for cell in day_entries %}
+                      {% if cell.removed %}
+                        <div class="tt-card mb-2 muted"><s>Removed for {{ cell.date|date:"d M" }}</s></div>
+                      {% else %}
+                        <a class="tt-card d-block mb-2 text-decoration-none text-reset" href="{% url 'timetable:class_detail' cell.entry.pk %}{% if cell.date %}?date={{ cell.date|date:'Y-m-d' }}{% endif %}">
+                          <div class="d-flex justify-content-between align-items-start gap-2">
+                            <div>
+                              <div class="tt-time">{{ cell.entry.start_time|time:"g:i A" }} – {{ cell.entry.end_time|time:"g:i A" }}</div>
+                              <div class="tt-class">{{ cell.entry.school_class }} · Period {{ cell.entry.period }}</div>
+                            </div>
+                            {% if cell.completed %}<span class="badge badge-soft-success"><i class="bi bi-check-lg"></i></span>{% endif %}
+                          </div>
+                        </a>
+                      {% endif %}
+                    {% endfor %}
                   {% endif %}
+                {% endfor %}
+              {% endfor %}
+            </div>
+            {% endfor %}
+            {% endif %}
+            </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-xl-3">
+      <div class="card h-100">
+        <div class="card-header">
+          <span>Manual Classes</span>
+          <a class="small" href="{% url 'timetable:assign_manual_class' %}"><i class="bi bi-plus-lg me-1"></i>Add</a>
+        </div>
+        <div class="card-body">
+          {% if manual_classes %}
+            {% for m in manual_classes %}
+            <div class="d-flex align-items-start gap-2 py-2 border-bottom {% if forloop.last %}border-0{% endif %}">
+              <span class="badge badge-soft-warning mt-1">Manual</span>
+              <div class="flex-grow-1">
+                <div class="fw-semibold">{{ m.school_class }}</div>
+                <div class="text-muted small">
+                  {{ m.date|date:"l, d M" }} ·
+                  {{ m.start_time|time:"g:i A" }}–{{ m.end_time|time:"g:i A" }}
+                  {% if m.period %} · Period {{ m.period }}{% endif %}
                 </div>
               </div>
+              <a class="btn btn-light btn-sm text-danger" href="{% url 'timetable:manual_class_delete' m.pk %}" title="Delete manual class"><i class="bi bi-trash"></i></a>
+            </div>
             {% endfor %}
           {% else %}
-            <div class="text-muted small text-center py-4"><i class="bi bi-calendar2-minus"></i> No classes</div>
+            {% include "partials/empty_state.html" with empty_icon="bi-plus-square" empty_title="No manual classes" empty_text="Add a one-off class for a specific date — your weekly timetable stays unchanged." %}
           {% endif %}
         </div>
       </div>
     </div>
-    {% endfor %}
   </div>
 </div>
 {% endblock %}

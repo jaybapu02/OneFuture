@@ -1,5 +1,5 @@
 """
-WSGI config for the TrainerHub project.
+WSGI config for the OneFuture project.
 
 It exposes the WSGI callable as a module-level variable named ``application``
 so Gunicorn can import it: ``gunicorn config.wsgi:application``

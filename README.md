@@ -1,48 +1,61 @@
-# TrainerHub — Trainer Management & Session Tracking System
+# OneFuture — Trainer Management & Session Tracking System
 
-A production-ready Django web application for training organizations to manage
-**trainers**, **timetables**, **class tasks**, and **post-class session reports**.
+A Django web application for **OneFuture Foundation** trainers. Each trainer
+belongs to **one school** and follows their school's **weekly timetable**
+(the source of truth for regular classes). The trainer's dashboard derives
+today's classes from the current day of week + the recurring timetable — no
+daily manual assignment is needed.
 
-Trainers log in and instantly see today's classes, complete a class report in
-about 30 seconds (students present + what was taught), assign themselves tasks,
-and review their session history. Admins manage trainers, classes, subjects and
-the weekly timetable, and monitor activity through dashboards and reports.
+Real setup (seeded): **BMC Bagurai School, Bhadrak** — trainer
+**Jaychandra Dash**, Classes **3–8**, subject **Artificial Intelligence**, and
+the actual 12-entry weekly timetable (Periods 4–7, Monday–Friday).
 
 ---
 
 ## Features
 
 ### For Trainers
-- Secure login with role-based access (trainers only see their own data)
-- Dashboard with greeting, today's summary, today's timetable and tasks
-- **Today's timetable** with Upcoming / Current / Completed status (current class highlighted)
-- **Weekly timetable** view with week navigation and today highlighted
-- **Task management**: assign a task from any timetable entry (class, subject,
-  date and times pre-filled), edit, delete, mark complete (one-click via HTMX)
-- **Complete Session** workflow: students present, what was taught, activity,
-  optional notes — everything else is automatic
-- **Automatic session numbers** — never entered manually
-- Session history with filters (date range, class, subject) and pagination
-- Session details and the ability to edit your own reports
-- Personal report: totals, average attendance, classes handled, topics covered, sessions-over-time chart
-- Profile and password change
+- Secure login; trainers only ever see their own school's timetable and data
+- **Today's Classes** on the dashboard — computed automatically from the
+  recurring weekly timetable (e.g. Monday shows Class 7 · 12:30–1:15,
+  Class 5 · 2:00–2:40, Class 8 · 3:20–4:00) plus any manual classes for today
+- **My Weekly Timetable** — the actual period-grid format (Day × Period 4–7),
+  responsive: table on desktop, vertical day cards on mobile
+- **Upload Weekly Timetable** (.xlsx) with preview → confirm → import:
+  - Parses cells like `7th — 12:30–1:15` into class, start and end time
+  - The period number comes from the column header (`Period N` columns are
+    detected dynamically)
+  - Empty cells and `—` are ignored
+  - No trainer name needed in the file — the timetable belongs to the
+    logged-in trainer and their school
+  - Re-importing **replaces** the weekly timetable without touching historical
+    sessions, tasks or reports
+- **Download Weekly Timetable Template** (.xlsx) matching the real structure,
+  with an Instructions sheet
+- **Assign Class** — one-off manual class for a specific date (labelled
+  **Manual**); the recurring timetable is never modified
+- **Delete rules**:
+  - Manual class → deleted for that one date only
+  - Recurring class → two explicit choices: *Remove for this date* (occurrence
+    suppressed, weekly rule kept) or *Remove from weekly timetable* (confirmed
+    before the recurring rule is deactivated)
+- **Complete Session** — students present, what was taught, activity, notes;
+  trainer, school, class, date, period and times are auto-filled; the
+  **session number is computed by the backend** and never reset by timetable
+  changes
+- **Assign Task** from any class — class, date, period and times pre-filled
+- Session history, personal report, profile, password change
 
 ### For Admins
-- Admin dashboard: totals, today's activity, pending reports at a glance
-- Manage trainers (create / edit / activate / deactivate)
-- Manage classes (create / edit / activate / deactivate)
-- Manage subjects (create / edit / activate / deactivate)
-- Manage the timetable with **automatic conflict detection**
-  (same trainer double-booked, or same class with two trainers at an overlapping time)
-- View all sessions across all trainers with filters
-- Organization report with charts (sessions by trainer, by class, over time)
-- Full Django admin interface for power users
+- Admin dashboard with real totals and today's activity
+- Manage schools, trainers (each assigned to exactly one school), classes,
+  subjects and the timetable with automatic conflict detection
+- View all sessions with filters; organization report with charts
+- Full Django admin for power users
 
 ### Platform
-- Mobile-first responsive UI (works at 320px → 1440px+)
-- Professional light theme, Bootstrap 5, Bootstrap Icons, Chart.js (reports only), minimal HTMX
-- Friendly 403 / 404 / 500 error pages and empty states everywhere
-- PostgreSQL persistence, WhiteNoise static serving, Gunicorn, Render-ready
+- Mobile-first responsive UI (320px → 1440px+)
+- PostgreSQL, WhiteNoise, Gunicorn, Render-ready
 
 ---
 
@@ -51,37 +64,9 @@ the weekly timetable, and monitor activity through dashboards and reports.
 | Layer      | Technology                                        |
 |------------|---------------------------------------------------|
 | Backend    | Python 3.12, Django 5.1, Django ORM, PostgreSQL   |
+| Excel      | openpyxl (import + template generation)           |
 | Frontend   | Django Templates, Bootstrap 5, vanilla JS, HTMX, Chart.js |
 | Production | Gunicorn, WhiteNoise, PostgreSQL, Render          |
-
----
-
-## Project Structure
-
-```
-OneFuture/
-├── manage.py
-├── requirements.txt
-├── build.sh                  # Render build script
-├── render.yaml               # Optional Render blueprint
-├── .env.example              # Template for environment variables
-├── .gitignore
-├── .python-version
-├── config/                   # Project settings package
-│   ├── settings.py
-│   ├── urls.py
-│   ├── wsgi.py
-│   └── context_processors.py
-├── accounts/                 # Login/logout, password change, dashboards, permissions
-├── trainers/                 # TrainerProfile model + admin CRUD + seed command
-├── classes/                  # SchoolClass + Subject models + admin CRUD
-├── timetable/                # Timetable model, conflict validation, weekly views
-├── tasks/                    # Task model + trainer task management
-├── sessions/                 # Session model, automatic numbering, reports
-├── reports/                  # Trainer & admin report views with charts
-├── templates/                # Base templates, partials, per-app pages
-└── static/                   # Theme CSS + small JS
-```
 
 ---
 
@@ -89,7 +74,7 @@ OneFuture/
 
 ### Prerequisites
 - Python 3.12+
-- PostgreSQL (local instance) — e.g. `brew install postgresql`, `apt install postgresql`, or the Windows installer
+- PostgreSQL (local instance)
 
 ### 1. Clone & set up the environment
 
@@ -123,41 +108,46 @@ DATABASE_URL=postgres://postgres:postgres@localhost:5432/trainerhub
 ALLOWED_HOSTS=localhost,127.0.0.1
 ```
 
-Generate a secret key with:
-
-```bash
-python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
-```
-
-### 4. Migrate & seed demo data
+### 4. Migrate & seed the actual data
 
 ```bash
 python manage.py migrate
-python manage.py seed_demo_data
+python manage.py seed_data
+python manage.py import_august_data
 ```
 
-The seed command creates demo data (see below). It refuses to run when data
-already exists, so it is safe to re-run.
+`seed_data` loads only real data: the school (BMC Bagurai School), the trainer
+(Jaychandra Dash), Classes 3–8, the Artificial Intelligence subject and the
+actual 12-entry weekly timetable (Monday=3, Tuesday=2, Wednesday=3,
+Thursday=2, Friday=2). **No mock tasks or sessions are created.** It refuses
+to run when data already exists, so it is safe to re-run.
 
-### 5. Run
+(`seed_demo_data` is kept as an alias of `seed_data`.)
+
+`import_august_data` loads the real **August 2026 session records** from the
+"August Month Details" monthly report (20 sessions: 10 class days across
+Classes 3–8, with historical session numbers, student totals/present/absent
+counts, lesson plans, location "Bhadrak" and timings preserved exactly as
+written in the report). Office/NA rows never become sessions, multi-class
+rows become one session per class, and the import is **idempotent** — it keys
+records on (trainer, date, class, session number), never duplicates, and
+never overwrites values edited manually after import.
+
+### 5. Create an admin and run
 
 ```bash
+python manage.py createsuperuser
 python manage.py runserver
 ```
 
 Open http://127.0.0.1:8000
 
-### Demo login credentials
+| Role    | Username    | Password   |
+|---------|-------------|------------|
+| Admin   | (you create) | —         |
+| Trainer | `jaychandra` | `Jay@123` |
 
-| Role    | Username | Password   |
-|---------|----------|------------|
-| Admin   | `admin`  | `Admin@123` |
-| Trainer | `jay`    | `Jay@123`  |
-| Trainer | `priya`  | `Priya@123`|
-| Trainer | `rahul`  | `Rahul@123`|
-
-> Demo credentials are for local development only. Change them (or create new
-> users) before any production deployment.
+> Local credentials only — change them before any production deployment.
 
 ---
 
@@ -167,9 +157,39 @@ Open http://127.0.0.1:8000
 python manage.py test
 ```
 
-52 tests cover authentication, role permissions and data isolation, session
+110 tests cover authentication, role permissions and data isolation, session
 numbering (including a true 10-thread concurrency test), timetable conflict
-detection, task CRUD, and session validation.
+detection, task CRUD, session validation, the full weekly-timetable workflow:
+Excel cell parsing, class/time extraction, empty-cell handling, per-day class
+counts (3/2/3/2/2 = 12 total), today's classes, trainer data isolation, manual
+assignment/deletion, recurring-delete safety, session survival across
+timetable replacement, the absence of mock data, and the real August 2026
+session import (20 sessions, NA rows skipped, per-class splitting, historical
+numbers preserved, idempotent re-runs, monthly filtering and summary).
+
+---
+
+## Weekly Timetable (the source of truth)
+
+The timetable is **recurring** — stored once per weekday/period, never one row
+per week. Today's classes are:
+
+```
+Today's date → day of week → trainer's recurring timetable → today's classes
+```
+
+Actual weekly schedule (12 classes):
+
+| Day       | P4            | P5            | P6            | P7            |
+|-----------|---------------|---------------|---------------|---------------|
+| Monday    | 7th 12:30–1:15 | —            | 5th 2:00–2:40 | 8th 3:20–4:00 |
+| Tuesday   | —             | —             | 3rd 2:40–3:20 | 6th 3:20–4:00 |
+| Wednesday | —             | 4th 2:00–2:40 | 8th 2:40–3:20 | 3rd 3:20–4:00 |
+| Thursday  | —             | 7th 2:00–2:40 | —             | 5th 3:20–4:00 |
+| Friday    | —             | —             | 4th 2:40–3:20 | 6th 3:20–4:00 |
+
+Excel cells are written like `7th — 12:30–1:15`; separators `—`, `–`, `-`, `|`
+are all accepted, and additional `Period N` columns are detected dynamically.
 
 ---
 
@@ -181,9 +201,15 @@ Session numbers are **always computed by the backend** — trainers never enter 
 - Numbering is **independent per class + subject** — never global.
 - Deleting a session **does not renumber** history: if sessions 1–4 exist and
   session 3 is deleted, the next session is still **5**.
+- Replacing the weekly timetable **never resets** session numbers.
 - Concurrency is safe: the class row is locked (`select_for_update`) inside a
-  transaction while the number is computed, and the database constraint
-  `(school_class, subject, session_number)` is a backstop against duplicates.
+  transaction while the number is computed, which serializes number generation
+  for that class.
+- **Historical August 2026 records keep the session numbers written in the
+  monthly report**, even when those numbers are non-sequential or repeated
+  per class (there is deliberately no unique database constraint on
+  `(school_class, subject, session_number)`). New sessions after the import
+  continue from `highest number + 1`.
 
 ---
 
@@ -195,7 +221,7 @@ Session numbers are **always computed by the backend** — trainers never enter 
 2. In Render: **New → Blueprint**, connect the repository.
 3. `render.yaml` creates the PostgreSQL database and the web service
    automatically, wires `DATABASE_URL`, generates `SECRET_KEY` and sets
-   `ALLOWED_HOSTS` / `CSRF_TRUSTED_ORIGINS` from the service URL.
+   `ALLOWED_HOSTS` / `CSRF_TRUSTED_ORIGINS`.
 
 ### Option B — Manual web service
 
@@ -204,27 +230,11 @@ Session numbers are **always computed by the backend** — trainers never enter 
    - Runtime: **Python 3**
    - Build Command: `./build.sh`
    - Start Command: `gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 60`
-3. Environment variables:
-   - `SECRET_KEY` — long random string (use Render's "Generate" button)
-   - `DEBUG` → `False`
-   - `DATABASE_URL` → your Render PostgreSQL connection string
-   - `ALLOWED_HOSTS` → `your-app.onrender.com`
-   - `CSRF_TRUSTED_ORIGINS` → `https://your-app.onrender.com`
-   - `TIME_ZONE` (optional, default `Asia/Kolkata`)
+3. Environment variables: `SECRET_KEY`, `DEBUG=False`, `DATABASE_URL`,
+   `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, `TIME_ZONE` (optional).
 
-`build.sh` installs dependencies, runs migrations and collects static files.
-Static files are served by WhiteNoise — no separate static host needed.
-
-### After deploying
-
-Create an admin account on the production database:
-
-```bash
-# Run inside the Render shell
-python manage.py createsuperuser
-```
-
-> **Never** run `seed_demo_data` in production unless you want demo accounts live.
+After deploying, run `python manage.py migrate` and `python manage.py seed_data`
+on the production database, then create an admin account.
 
 ---
 
@@ -238,15 +248,7 @@ python manage.py createsuperuser
 | `ALLOWED_HOSTS`        | `*`                                 | Comma-separated hostnames                    |
 | `CSRF_TRUSTED_ORIGINS` | empty                                | Comma-separated origins (incl. scheme)       |
 | `TIME_ZONE`            | `Asia/Kolkata`                      | Organization timezone                        |
-| `SITE_NAME`            | `TrainerHub`                        | Application display name (changeable)        |
-| `SECURE_SSL_REDIRECT`  | `True` (prod)                       | Redirect HTTP → HTTPS                        |
-| `SESSION_COOKIE_SECURE`| `True` (prod)                       | Secure session cookie                        |
-| `CSRF_COOKIE_SECURE`   | `True` (prod)                       | Secure CSRF cookie                           |
-| `SECURE_HSTS`          | `True` (prod)                       | HSTS headers                                 |
-
-Secrets are never committed: `.env` is git-ignored and only `.env.example` is
-checked in. In production `DEBUG=False` also enables secure cookies, HSTS and
-the hashed-manifest static storage.
+| `SITE_NAME`            | `OneFuture`                         | Application display name (changeable)        |
 
 ---
 
@@ -256,30 +258,14 @@ the hashed-manifest static storage.
 |---------|----------|
 | `Database "trainerhub" does not exist` | Create it: `createdb trainerhub` |
 | `Password authentication failed` | Fix `DATABASE_URL` credentials in `.env` |
-| `Invalid HTTP_HOST header` | Add your hostname to `ALLOWED_HOSTS` |
-| Missing static files in production | Run `python manage.py collectstatic --noinput` (build.sh does this) |
 | `relation ... does not exist` | Run `python manage.py migrate` |
 | Tests fail with `test_trainerhub` locked | `psql -c "DROP DATABASE IF EXISTS test_trainerhub WITH (FORCE);"` |
-| Timezone shows wrong date | Set `TIME_ZONE` to your organization's timezone |
+| Upload says "could not find the timetable structure" | The file needs a `Day` column and `Period N` headers (see template) |
 
 ---
 
 ## Roadmap (future, not implemented)
 
 Student-level attendance, parent accounts, notifications (email/WhatsApp),
-performance analytics, Excel/PDF exports, monthly reports, REST API,
-multi-organization / multi-branch support, lesson plans. The architecture
-(separate apps, session numbering service, index-friendly models) is designed
-so these can be added without rework.
-
----
-
-## Screenshots
-
-*Screenshots will be added here once captured.*
-
----
-
-## License
-
-Internal application — no license specified.
+performance analytics, REST API, monthly reports, multi-school support for a
+single trainer, lesson plans.

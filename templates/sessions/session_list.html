@@ -6,12 +6,18 @@
 {% block content %}
 <div class="px-3 px-lg-4">
   <div class="page-head">
-    <h1>{% if is_staff %}All Sessions{% else %}My Session History{% endif %}</h1>
+    <h1>{% if is_staff %}All Sessions{% else %}My Session History{% endif %}
+      {% if month_label %}<span class="text-muted fs-5 fw-normal">· {{ month_label }}</span>{% endif %}
+    </h1>
   </div>
 
   <form class="card mb-3" method="get">
     <div class="card-body py-3">
       <div class="row g-2">
+        <div class="col-6 col-md-2">
+          <label class="form-label mb-1">Month</label>
+          <input type="month" name="month" value="{{ month }}" class="form-control">
+        </div>
         <div class="col-6 col-md-2">
           <label class="form-label mb-1">From</label>
           <input type="date" name="from" value="{{ date_from }}" class="form-control">
@@ -57,23 +63,54 @@
     </div>
   </form>
 
+  <div class="row g-3 mb-3">
+    <div class="col-6 col-lg-2">
+      <div class="card stat-card h-100"><div class="card-body py-3">
+        <div class="stat-label">Sessions</div><div class="stat-value">{{ summary.total_sessions }}</div>
+      </div></div>
+    </div>
+    <div class="col-6 col-lg-2">
+      <div class="card stat-card h-100"><div class="card-body py-3">
+        <div class="stat-label">Class Days</div><div class="stat-value">{{ summary.working_days }}</div>
+      </div></div>
+    </div>
+    <div class="col-6 col-lg-2">
+      <div class="card stat-card h-100"><div class="card-body py-3">
+        <div class="stat-label">Classes Covered</div><div class="stat-value">{{ summary.classes_covered }}</div>
+      </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card stat-card h-100"><div class="card-body py-3">
+        <div class="stat-label">Students Present</div><div class="stat-value">{{ summary.students_present }}</div>
+      </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card stat-card h-100"><div class="card-body py-3">
+        <div class="stat-label">Students Absent</div><div class="stat-value">{{ summary.students_absent }}</div>
+      </div></div>
+    </div>
+  </div>
+
   {% if sessions %}
   <div class="card d-none d-md-block">
     <div class="card-body p-0">
       <div class="table-responsive">
         <table class="table table-hover mb-0">
           <thead>
-            <tr><th>Date</th><th>Class</th><th>Subject</th><th>Session</th><th>Students</th><th>Topic</th>{% if is_staff %}<th>Trainer</th>{% endif %}<th class="text-end"></th></tr>
+            <tr><th>Date</th><th>Class</th><th>Subject</th><th>Session</th><th>Total</th><th>Present</th><th>Absent</th><th>Location</th><th>Topic</th>{% if is_staff %}<th>Trainer</th>{% endif %}<th class="text-end"></th></tr>
           </thead>
           <tbody>
             {% for session in sessions %}
             <tr>
-              <td class="text-nowrap">{{ session.date|date:"d M Y" }}</td>
+              <td class="text-nowrap">{{ session.date|date:"d M Y" }}<div class="text-muted small">{{ session.date|date:"l" }}</div></td>
               <td>{{ session.school_class }}</td>
               <td>{{ session.subject.name }}</td>
-              <td><span class="badge badge-soft-brand">Session {{ session.session_number }}</span></td>
+              <td><span class="badge badge-soft-brand">Session {{ session.session_number|default:"—" }}</span></td>
+              <td>{{ session.total_students|default:"—" }}</td>
               <td>{{ session.students_present }}</td>
-              <td class="text-truncate" style="max-width: 260px;" title="{{ session.topic_taught }}">{{ session.topic_taught }}</td>
+              <td>{{ session.students_absent|default:"—" }}</td>
+              <td>{{ session.location|default:"—" }}</td>
+              <td class="text-truncate" style="max-width: 240px;" title="{{ session.topic_taught }}">{{ session.topic_taught }}</td>
               {% if is_staff %}<td>{{ session.trainer.full_name }}</td>{% endif %}
               <td class="text-end">
                 <a class="btn btn-sm btn-soft" href="{% url 'sessions:session_detail' session.pk %}">View</a>
@@ -96,7 +133,7 @@
             <span class="text-muted small">{{ session.date|date:"d M Y" }}</span>
           </div>
           <div class="fw-semibold">{{ session.school_class }} · {{ session.subject.name }}</div>
-          <div class="text-muted small mt-1"><i class="bi bi-people me-1"></i>{{ session.students_present }} students</div>
+          <div class="text-muted small mt-1"><i class="bi bi-people me-1"></i>{{ session.students_present }} present{% if session.students_absent is not None %} · {{ session.students_absent }} absent{% endif %}</div>
           <div class="text-muted small text-truncate mt-1">{{ session.topic_taught }}</div>
           {% if is_staff %}<div class="text-muted small mt-1"><i class="bi bi-person me-1"></i>{{ session.trainer.full_name }}</div>{% endif %}
         </div>

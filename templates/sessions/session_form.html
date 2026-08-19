@@ -13,7 +13,8 @@
           <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
             <span class="badge badge-soft-brand fs-6"><i class="bi bi-journal-plus me-1"></i>Session Number: {{ next_number }}</span>
             <span class="badge badge-soft-info fs-6">{{ timetable.school_class }}</span>
-            <span class="badge badge-soft-muted fs-6">{{ timetable.subject.name }}</span>
+            {% if timetable.subject %}<span class="badge badge-soft-muted fs-6">{{ timetable.subject.name }}</span>{% endif %}
+            {% if timetable.period %}<span class="badge badge-soft-warning fs-6">Period {{ timetable.period }}</span>{% endif %}
           </div>
           <div class="text-muted small"><i class="bi bi-info-circle me-1"></i>This session number is assigned automatically. Class, subject and trainer come from your timetable.</div>
           {% else %}
@@ -73,6 +74,23 @@
               <div class="col-6 col-md-3">
                 <label class="form-label" for="{{ form.end_time.id_for_label }}">End time</label>
                 {{ form.end_time }}
+              </div>
+            </div>
+            {% endif %}
+
+            {% if mode == 'edit' %}
+            <div class="row g-3 mb-2">
+              <div class="col-6 col-md-3">
+                <label class="form-label" for="{{ form.total_students.id_for_label }}">Total Students <span class="text-muted fw-normal">(optional)</span></label>
+                {{ form.total_students }}
+              </div>
+              <div class="col-6 col-md-3">
+                <label class="form-label" for="{{ form.students_absent.id_for_label }}">Students Absent <span class="text-muted fw-normal">(optional)</span></label>
+                {{ form.students_absent }}
+              </div>
+              <div class="col-6 col-md-3">
+                <label class="form-label" for="{{ form.location.id_for_label }}">Location <span class="text-muted fw-normal">(optional)</span></label>
+                {{ form.location }}
               </div>
             </div>
             {% endif %}

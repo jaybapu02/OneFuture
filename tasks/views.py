@@ -9,7 +9,7 @@ from django.views.decorators.http import require_http_methods
 
 from accounts.permissions import trainer_required
 from classes.models import SchoolClass, Subject
-from timetable.models import Timetable
+from timetable.models import ManualClass, Timetable
 
 from .forms import TaskForm
 from .models import Task
@@ -70,10 +70,16 @@ def task_create(request):
     profile = request.user.profile
 
     timetable = None
+    manual = None
     timetable_id = request.GET.get("timetable") or request.POST.get("timetable")
+    manual_id = request.GET.get("manual") or request.POST.get("manual")
     if timetable_id:
         timetable = get_object_or_404(
             Timetable, pk=timetable_id, trainer=profile, is_active=True
+        )
+    elif manual_id:
+        manual = get_object_or_404(
+            ManualClass, pk=manual_id, trainer=profile, is_active=True
         )
 
     if request.method == "POST":
@@ -83,10 +89,20 @@ def task_create(request):
             task.trainer = profile
             if timetable:
                 task.timetable = timetable
+                task.school = timetable.school or profile.school
                 task.school_class = timetable.school_class
                 task.subject = timetable.subject
+                task.period = timetable.period
                 task.start_time = timetable.start_time
                 task.end_time = timetable.end_time
+            elif manual:
+                task.timetable = None
+                task.school = manual.school or profile.school
+                task.school_class = manual.school_class
+                task.subject = manual.subject
+                task.period = manual.period
+                task.start_time = manual.start_time
+                task.end_time = manual.end_time
             task.save()
             messages.success(request, "Task created successfully.")
             return redirect("tasks:task_list")
@@ -100,13 +116,24 @@ def task_create(request):
                 "start_time": timetable.start_time,
                 "end_time": timetable.end_time,
             }
+        elif manual:
+            initial = {
+                "school_class": manual.school_class_id,
+                "subject": manual.subject_id,
+                "date": manual.date,
+                "start_time": manual.start_time,
+                "end_time": manual.end_time,
+            }
         form = TaskForm(initial=initial)
 
     if timetable:
         form.fields["school_class"].initial = timetable.school_class_id
         form.fields["subject"].initial = timetable.subject_id
+    elif manual and manual.subject:
+        form.fields["school_class"].initial = manual.school_class_id
+        form.fields["subject"].initial = manual.subject_id
 
-    context = {"form": form, "timetable": timetable}
+    context = {"form": form, "timetable": timetable, "manual": manual}
     return render(request, "tasks/task_form.html", context)
 
 

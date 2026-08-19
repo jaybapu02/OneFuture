@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 
-from .models import TrainerProfile
+from .models import School, TrainerProfile
 
 
 class TrainerCreateForm(forms.ModelForm):
@@ -23,6 +23,7 @@ class TrainerCreateForm(forms.ModelForm):
     class Meta:
         model = TrainerProfile
         fields = [
+            "school",
             "full_name",
             "employee_id",
             "phone_number",
@@ -31,6 +32,7 @@ class TrainerCreateForm(forms.ModelForm):
             "is_active",
         ]
         widgets = {
+            "school": forms.Select(attrs={"class": "form-select"}),
             "full_name": forms.TextInput(attrs={"class": "form-control"}),
             "employee_id": forms.TextInput(attrs={"class": "form-control"}),
             "phone_number": forms.TextInput(attrs={"class": "form-control"}),
@@ -39,6 +41,9 @@ class TrainerCreateForm(forms.ModelForm):
                 attrs={"class": "form-control", "type": "date"}
             ),
             "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
+        help_texts = {
+            "school": "Each trainer belongs to exactly one school.",
         }
 
     def clean_username(self):
@@ -73,6 +78,7 @@ class TrainerEditForm(forms.ModelForm):
     class Meta:
         model = TrainerProfile
         fields = [
+            "school",
             "full_name",
             "employee_id",
             "phone_number",
@@ -81,6 +87,7 @@ class TrainerEditForm(forms.ModelForm):
             "is_active",
         ]
         widgets = {
+            "school": forms.Select(attrs={"class": "form-select"}),
             "full_name": forms.TextInput(attrs={"class": "form-control"}),
             "employee_id": forms.TextInput(attrs={"class": "form-control"}),
             "phone_number": forms.TextInput(attrs={"class": "form-control"}),
@@ -89,6 +96,9 @@ class TrainerEditForm(forms.ModelForm):
                 attrs={"class": "form-control", "type": "date"}
             ),
             "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
+        help_texts = {
+            "school": "Each trainer belongs to exactly one school.",
         }
 
     def save(self, commit=True):

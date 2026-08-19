@@ -2,7 +2,7 @@ import datetime
 import json
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Sum
+from django.db.models import Count
 from django.shortcuts import render
 from django.utils import timezone
 
@@ -72,11 +72,6 @@ def _trainer_report(request):
     sessions, filters = _base_filters(request, sessions)
 
     total_sessions = sessions.count()
-    agg = sessions.aggregate(
-        total_students=Sum("students_present"),
-    )
-    total_students = agg["total_students"] or 0
-    avg_attendance = round(total_students / total_sessions, 1) if total_sessions else 0
     classes_handled = (
         sessions.values("school_class__name", "school_class__section")
         .annotate(count=Count("id"))
@@ -91,8 +86,6 @@ def _trainer_report(request):
         "filters": filters,
         "metrics": {
             "total_sessions": total_sessions,
-            "total_students": total_students,
-            "avg_attendance": avg_attendance,
             "classes_handled": classes_handled.count(),
         },
         "classes_handled": list(classes_handled),
@@ -114,14 +107,11 @@ def _admin_report(request):
         filters["trainer"] = trainer_id
 
     total_sessions = sessions.count()
-    agg = sessions.aggregate(total_students=Sum("students_present"))
-    total_students = agg["total_students"] or 0
-    avg_attendance = round(total_students / total_sessions, 1) if total_sessions else 0
     active_trainers = TrainerProfile.objects.filter(is_active=True).count()
 
     by_trainer = list(
         sessions.values("trainer__full_name")
-        .annotate(count=Count("id"), students=Sum("students_present"))
+        .annotate(count=Count("id"))
         .order_by("-count")
     )
     by_class = list(
@@ -136,8 +126,6 @@ def _admin_report(request):
         "filters": filters,
         "metrics": {
             "total_sessions": total_sessions,
-            "total_students": total_students,
-            "avg_attendance": avg_attendance,
             "active_trainers": active_trainers,
         },
         "by_trainer": by_trainer,

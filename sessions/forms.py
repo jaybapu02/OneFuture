@@ -18,6 +18,9 @@ class SessionForm(forms.ModelForm):
             "start_time",
             "end_time",
             "students_present",
+            "total_students",
+            "students_absent",
+            "location",
             "topic_taught",
             "activity",
             "notes",
@@ -32,6 +35,28 @@ class SessionForm(forms.ModelForm):
                     "min": "0",
                     "inputmode": "numeric",
                     "placeholder": "e.g. 25",
+                }
+            ),
+            "total_students": forms.NumberInput(
+                attrs={
+                    "class": "form-control",
+                    "min": "0",
+                    "inputmode": "numeric",
+                    "placeholder": "Optional",
+                }
+            ),
+            "students_absent": forms.NumberInput(
+                attrs={
+                    "class": "form-control",
+                    "min": "0",
+                    "inputmode": "numeric",
+                    "placeholder": "Auto from total − present",
+                }
+            ),
+            "location": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "e.g. Bhadrak (optional)",
                 }
             ),
             "topic_taught": forms.Textarea(
@@ -63,6 +88,12 @@ class SessionForm(forms.ModelForm):
             raise forms.ValidationError("Students present cannot be negative.")
         return value
 
+    def clean_total_students(self):
+        value = self.cleaned_data.get("total_students")
+        if value is not None and value < 0:
+            raise forms.ValidationError("Total students cannot be negative.")
+        return value
+
     def clean_topic_taught(self):
         value = self.cleaned_data.get("topic_taught", "")
         if not value or not value.strip():
@@ -75,4 +106,15 @@ class SessionForm(forms.ModelForm):
         end_time = cleaned.get("end_time")
         if start_time and end_time and end_time <= start_time:
             self.add_error("end_time", "End time must be after start time.")
+
+        total = cleaned.get("total_students")
+        present = cleaned.get("students_present")
+        absent = cleaned.get("students_absent")
+        if total is not None and present is not None and present > total:
+            self.add_error(
+                "students_present",
+                "Students present cannot exceed total students.",
+            )
+        if absent is None and total is not None and present is not None:
+            cleaned["students_absent"] = total - present
         return cleaned

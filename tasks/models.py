@@ -4,7 +4,7 @@ from django.utils import timezone
 
 from classes.models import SchoolClass, Subject
 from timetable.models import Timetable
-from trainers.models import TrainerProfile
+from trainers.models import TrainerProfile, School
 
 
 class Task(models.Model):
@@ -23,6 +23,10 @@ class Task(models.Model):
     trainer = models.ForeignKey(
         TrainerProfile, on_delete=models.CASCADE, related_name="tasks"
     )
+    school = models.ForeignKey(
+        School, on_delete=models.CASCADE, related_name="tasks",
+        null=True, blank=True,
+    )
     timetable = models.ForeignKey(
         Timetable,
         on_delete=models.SET_NULL,
@@ -39,6 +43,7 @@ class Task(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     date = models.DateField(db_index=True)
+    period = models.PositiveSmallIntegerField(null=True, blank=True)
     start_time = models.TimeField(null=True, blank=True)
     end_time = models.TimeField(null=True, blank=True)
     priority = models.CharField(

@@ -1,7 +1,7 @@
 from threading import Thread
 
 from django.contrib.auth.models import User
-from django.db import IntegrityError, transaction
+from django.db import transaction
 from django.test import TestCase, TransactionTestCase
 from django.urls import reverse
 
@@ -94,11 +94,27 @@ class SessionNumberingTests(TestCase):
         self.create_session(session_number=7)
         self.assertEqual(get_next_session_number(self.cls, self.subject), 8)
 
-    def test_duplicate_session_number_rejected_by_constraint(self):
-        self.create_session(session_number=1)
-        with self.assertRaises(IntegrityError):
-            with transaction.atomic():
-                self.create_session(session_number=1)
+    def test_duplicate_historical_numbers_are_allowed(self):
+        """The August report contains irregular per-class numbers (e.g. two
+        sessions numbered 2 for one class). Historical numbers are stored
+        exactly as written, so no unique DB constraint exists anymore."""
+        first = self.create_session(session_number=2)
+        second = self.create_session(session_number=2)
+        self.assertEqual(first.session_number, second.session_number)
+        self.assertEqual(Session.objects.count(), 2)
+        self.assertEqual(get_next_session_number(self.cls, self.subject), 3)
+
+    def test_null_session_number_is_allowed(self):
+        session = Session.objects.create(
+            trainer=self.trainer,
+            school_class=self.cls,
+            subject=self.subject,
+            date="2026-08-12",
+            students_present=20,
+            topic_taught="Number not recorded",
+        )
+        self.assertIsNone(session.session_number)
+        self.assertEqual(get_next_session_number(self.cls, self.subject), 1)
 
 
 class ConcurrentSessionNumberingTests(TransactionTestCase):

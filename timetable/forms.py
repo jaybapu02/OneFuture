@@ -1,6 +1,16 @@
 from django import forms
+from django.core.validators import FileExtensionValidator
 
-from .models import DAYS_OF_WEEK, Timetable
+from classes.models import SchoolClass, Subject
+
+from .models import DAYS_OF_WEEK, ManualClass, Timetable
+
+XLSX_VALIDATORS = [
+    FileExtensionValidator(
+        allowed_extensions=["xlsx"],
+        message="Only .xlsx files are accepted.",
+    )
+]
 
 
 class TimetableForm(forms.ModelForm):
@@ -11,9 +21,11 @@ class TimetableForm(forms.ModelForm):
             "school_class",
             "subject",
             "day_of_week",
+            "period",
             "start_time",
             "end_time",
             "room",
+            "source",
             "is_active",
         ]
         widgets = {
@@ -21,6 +33,9 @@ class TimetableForm(forms.ModelForm):
             "school_class": forms.Select(attrs={"class": "form-select"}),
             "subject": forms.Select(attrs={"class": "form-select"}),
             "day_of_week": forms.Select(attrs={"class": "form-select"}),
+            "period": forms.NumberInput(
+                attrs={"class": "form-control", "min": "1", "placeholder": "e.g. 4"}
+            ),
             "start_time": forms.TimeInput(
                 attrs={"class": "form-control", "type": "time"}
             ),
@@ -28,6 +43,7 @@ class TimetableForm(forms.ModelForm):
                 attrs={"class": "form-control", "type": "time"}
             ),
             "room": forms.TextInput(attrs={"class": "form-control"}),
+            "source": forms.Select(attrs={"class": "form-select"}),
             "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
 
@@ -90,3 +106,63 @@ class TimetableForm(forms.ModelForm):
             )
 
         return cleaned
+
+
+class ManualClassForm(forms.ModelForm):
+    class Meta:
+        model = ManualClass
+        fields = [
+            "school_class",
+            "subject",
+            "date",
+            "period",
+            "start_time",
+            "end_time",
+            "notes",
+        ]
+        labels = {
+            "school_class": "Class",
+            "period": "Period",
+            "notes": "Notes (optional)",
+        }
+        widgets = {
+            "school_class": forms.Select(attrs={"class": "form-select"}),
+            "subject": forms.Select(attrs={"class": "form-select"}),
+            "date": forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+            "period": forms.NumberInput(
+                attrs={"class": "form-control", "min": "1", "placeholder": "e.g. 6"}
+            ),
+            "start_time": forms.TimeInput(
+                attrs={"class": "form-control", "type": "time"}
+            ),
+            "end_time": forms.TimeInput(
+                attrs={"class": "form-control", "type": "time"}
+            ),
+            "notes": forms.TextInput(attrs={"class": "form-control"}),
+        }
+        help_texts = {
+            "school_class": "This is a one-off class on a specific date. "
+            "It does not change your recurring weekly timetable.",
+        }
+
+    def clean(self):
+        cleaned = super().clean()
+        start_time = cleaned.get("start_time")
+        end_time = cleaned.get("end_time")
+        if start_time and end_time and end_time <= start_time:
+            self.add_error("end_time", "End time must be after start time.")
+        return cleaned
+
+
+class TimetableUploadForm(forms.Form):
+    file = forms.FileField(
+        label="Weekly timetable (.xlsx)",
+        validators=XLSX_VALIDATORS,
+        widget=forms.FileInput(
+            attrs={"class": "form-control", "accept": ".xlsx"}
+        ),
+        help_text=(
+            "Structure: a 'Day' column and 'Period N' columns. Each cell like "
+            "'7th — 12:30–1:15'. Empty cells or '—' mean no class."
+        ),
+    )

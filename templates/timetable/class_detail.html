@@ -1,0 +1,116 @@
+{% extends "app_base.html" %}
+
+{% block title %}{{ entry.school_class }} · {{ entry.day_of_week }} · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}{{ entry.school_class }}{% endblock %}
+
+{% block content %}
+<div class="px-3 px-lg-4">
+  <div class="row g-3">
+    <div class="col-12 col-lg-7">
+      <div class="card mb-3">
+        <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+          <span>Class details</span>
+          <span class="badge badge-soft-info">Weekly timetable</span>
+        </div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-sm-4">Class</dt>
+            <dd class="col-sm-8">{{ entry.school_class }}</dd>
+            <dt class="col-sm-4">Day</dt>
+            <dd class="col-sm-8">{{ entry.day_of_week }}</dd>
+            <dt class="col-sm-4">Period</dt>
+            <dd class="col-sm-8">Period {{ entry.period|default:"—" }}</dd>
+            <dt class="col-sm-4">Time</dt>
+            <dd class="col-sm-8">{{ entry.start_time|time:"g:i A" }} – {{ entry.end_time|time:"g:i A" }}</dd>
+            <dt class="col-sm-4">Subject</dt>
+            <dd class="col-sm-8">{{ entry.subject.name|default:"—" }}</dd>
+            <dt class="col-sm-4">Source</dt>
+            <dd class="col-sm-8">{% if entry.source == 'EXCEL' %}Weekly Excel timetable{% else %}Manual{% endif %}</dd>
+          </dl>
+          <div class="d-flex flex-wrap gap-2 mt-4">
+            <a class="btn btn-brand btn-sm" href="{% url 'sessions:session_complete' entry.pk %}"><i class="bi bi-check2-circle me-1"></i>Complete Session</a>
+            <a class="btn btn-soft btn-sm" href="{% url 'tasks:task_create' %}?timetable={{ entry.pk }}"><i class="bi bi-plus-lg me-1"></i>Assign Task</a>
+            <a class="btn btn-outline-danger btn-sm ms-auto" href="{% url 'timetable:recurring_remove_weekly' entry.pk %}"><i class="bi bi-calendar2-x me-1"></i>Remove from weekly timetable</a>
+          </div>
+
+          {% if removed_on %}
+          <div class="alert alert-warning mt-3 mb-0 py-2 small">
+            <i class="bi bi-exclamation-triangle me-1"></i>This class is
+            <strong>removed on {{ context_date|date:"l, d M Y" }}</strong>.
+            The weekly rule still exists for other weeks.
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span>Tasks for this class</span>
+          <a class="small" href="{% url 'tasks:task_create' %}?timetable={{ entry.pk }}"><i class="bi bi-plus-lg me-1"></i>Assign Task</a>
+        </div>
+        <div class="card-body">
+          {% if tasks %}
+            {% for task in tasks %}
+            <div class="d-flex align-items-center gap-2 py-2 border-bottom {% if forloop.last %}border-0{% endif %}">
+              <span class="badge {% if task.status == 'Completed' %}badge-soft-success{% elif task.status == 'In Progress' %}badge-soft-info{% else %}badge-soft-warning{% endif %}">{{ task.status }}</span>
+              <div class="flex-grow-1">
+                <div class="fw-semibold">{{ task.title }}</div>
+                <div class="text-muted small">{{ task.date }} · {{ task.start_time|time:"g:i A"|default:"—" }}</div>
+              </div>
+              <span class="badge {% if task.priority == 'High' %}badge-soft-danger{% elif task.priority == 'Medium' %}badge-soft-warning{% else %}badge-soft-muted{% endif %}">{{ task.priority }}</span>
+            </div>
+            {% endfor %}
+          {% else %}
+            {% include "partials/empty_state.html" with empty_icon="bi-check2-square" empty_title="No tasks yet" empty_text="Assign a task to remember what to prepare for this class." %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-5">
+      <div class="card mb-3">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span>Session history</span>
+          <a class="small" href="{% url 'sessions:session_list' %}">View all</a>
+        </div>
+        <div class="card-body">
+          {% if sessions %}
+            {% for session in sessions %}
+            <a href="{% url 'sessions:session_detail' session.pk %}" class="text-decoration-none text-reset">
+              <div class="d-flex align-items-center gap-3 py-2 border-bottom {% if forloop.last %}border-0{% endif %}">
+                <span class="badge badge-soft-brand">Session {{ session.session_number }}</span>
+                <div class="flex-grow-1">
+                  <div class="fw-semibold">{{ session.date|date:"d M Y" }}</div>
+                  <div class="text-muted small">{{ session.students_present }} students
+                    {% if session.start_time %} · {{ session.start_time|time:"g:i A" }}{% endif %}</div>
+                </div>
+                <i class="bi bi-chevron-right text-muted"></i>
+              </div>
+            </a>
+            {% endfor %}
+          {% else %}
+            {% include "partials/empty_state.html" with empty_icon="bi-journal-text" empty_title="No sessions recorded yet" empty_text="Complete this class to record your first session." %}
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">Remove for one date only</div>
+        <div class="card-body">
+          <p class="text-muted small">
+            Need this class off <strong>{{ context_date|date:"l, d M Y" }}</strong>
+            without changing the weekly timetable?
+          </p>
+          <form method="post" action="{% url 'timetable:occurrence_remove_date' entry.pk %}">
+            {% csrf_token %}
+            <div class="input-group">
+              <input type="date" class="form-control" name="date" value="{{ context_date|date:'Y-m-d' }}">
+              <button class="btn btn-outline-danger" type="submit"><i class="bi bi-calendar2-x me-1"></i>Remove this date</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

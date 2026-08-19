@@ -24,6 +24,7 @@
           </div>
 
           <div class="detail-row"><span class="k">Username</span><span class="v">{{ user.username }}</span></div>
+          <div class="detail-row"><span class="k">School</span><span class="v">{{ profile.school|default:"—" }}</span></div>
           <div class="detail-row"><span class="k">Phone</span><span class="v">{{ profile.phone_number|default:"—" }}</span></div>
           <div class="detail-row"><span class="k">Joining Date</span><span class="v">{{ profile.joining_date|date:"d F Y"|default:"—" }}</span></div>
           <div class="detail-row"><span class="k">Member Since</span><span class="v">{{ profile.created_at|date:"d F Y" }}</span></div>
