@@ -23,9 +23,9 @@ services:
       - key: DEBUG
         value: "False"
       - key: ALLOWED_HOSTS
-        value: ${RENDER_EXTERNAL_URL}
+        value: "*"
       - key: CSRF_TRUSTED_ORIGINS
-        value: ${RENDER_EXTERNAL_URL}
+        value: https://onefuture.onrender.com
       - key: TIME_ZONE
         value: Asia/Kolkata
       - key: DATABASE_URL

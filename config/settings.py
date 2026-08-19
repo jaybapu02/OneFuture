@@ -180,7 +180,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Security
 # --------------------------------------------------------------------------
 
-CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", "")
+CSRF_TRUSTED_ORIGINS = [
+    origin if "://" in origin else f"https://{origin}"
+    for origin in env_list("CSRF_TRUSTED_ORIGINS", "")
+]
 
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
