@@ -31,6 +31,9 @@
   <a class="nav-link {% if url_name == 'class_list' %}active{% endif %}" href="{% url 'classes:class_list' %}">
     <i class="bi bi-mortarboard"></i> Classes
   </a>
+  <a class="nav-link {% if url_name == 'school_list' %}active{% endif %}" href="{% url 'trainers:school_list' %}">
+    <i class="bi bi-building"></i> Schools
+  </a>
   <a class="nav-link {% if url_name == 'subject_list' %}active{% endif %}" href="{% url 'classes:subject_list' %}">
     <i class="bi bi-book"></i> Subjects
   </a>

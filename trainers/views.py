@@ -7,8 +7,63 @@ from django.views.decorators.http import require_http_methods
 from accounts.permissions import staff_required
 from sessions.models import Session
 
-from .forms import TrainerCreateForm, TrainerEditForm
-from .models import TrainerProfile
+from .forms import SchoolForm, TrainerCreateForm, TrainerEditForm
+from .models import School, TrainerProfile
+
+
+@staff_required
+def school_list(request):
+    query = request.GET.get("q", "").strip()
+    schools = School.objects.annotate(
+        trainer_count=Count("trainers", distinct=True),
+        session_count=Count("sessions", distinct=True),
+    ).order_by("name")
+    if query:
+        schools = schools.filter(
+            Q(name__icontains=query) | Q(address__icontains=query)
+        )
+    page_obj = Paginator(schools, 20).get_page(request.GET.get("page"))
+    return render(request, "schools/school_list.html", {"schools": page_obj, "query": query})
+
+
+@staff_required
+@require_http_methods(["GET", "POST"])
+def school_create(request):
+    if request.method == "POST":
+        form = SchoolForm(request.POST)
+        if form.is_valid():
+            school = form.save()
+            messages.success(request, f"School {school.name} created successfully.")
+            return redirect("trainers:school_list")
+    else:
+        form = SchoolForm()
+    return render(request, "schools/school_form.html", {"form": form, "title": "Add School", "cancel_url": "trainers:school_list"})
+
+
+@staff_required
+@require_http_methods(["GET", "POST"])
+def school_edit(request, pk):
+    school = get_object_or_404(School, pk=pk)
+    if request.method == "POST":
+        form = SchoolForm(request.POST, instance=school)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "School updated successfully.")
+            return redirect("trainers:school_list")
+    else:
+        form = SchoolForm(instance=school)
+    return render(request, "schools/school_form.html", {"form": form, "title": "Edit School", "school": school, "cancel_url": "trainers:school_list"})
+
+
+@staff_required
+@require_http_methods(["POST"])
+def school_toggle(request, pk):
+    school = get_object_or_404(School, pk=pk)
+    school.is_active = not school.is_active
+    school.save(update_fields=["is_active", "updated_at"])
+    action = "activated" if school.is_active else "deactivated"
+    messages.success(request, f"School {school.name} {action}.")
+    return redirect("trainers:school_list")
 
 
 @staff_required
@@ -18,7 +73,7 @@ def trainer_list(request):
     only_inactive = request.GET.get("inactive", "") == "1"
 
     trainers = (
-        TrainerProfile.objects.select_related("user")
+        TrainerProfile.objects.select_related("user", "school")
         .annotate(
             sessions_count=Count("sessions", distinct=True),
         )

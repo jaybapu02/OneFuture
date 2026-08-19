@@ -7,7 +7,10 @@
 <div class="px-3 px-lg-4">
   <div class="page-head d-flex flex-wrap align-items-center justify-content-between gap-2">
     <h1>All Trainers</h1>
-    <a class="btn btn-brand" href="{% url 'trainers:trainer_create' %}"><i class="bi bi-person-plus me-1"></i>Add Trainer</a>
+    <div class="d-flex gap-2">
+      <a class="btn btn-soft" href="{% url 'trainers:school_list' %}"><i class="bi bi-building me-1"></i>Manage Schools</a>
+      <a class="btn btn-brand" href="{% url 'trainers:trainer_create' %}"><i class="bi bi-person-plus me-1"></i>Add Trainer</a>
+    </div>
   </div>
 
   <form class="card mb-3" method="get">
@@ -34,12 +37,13 @@
       <div class="table-responsive">
         <table class="table table-hover mb-0">
           <thead>
-            <tr><th>Trainer</th><th>Employee ID</th><th>Username</th><th>Designation</th><th>Sessions</th><th>Status</th><th class="text-end">Actions</th></tr>
+            <tr><th>Trainer</th><th>School</th><th>Employee ID</th><th>Username</th><th>Designation</th><th>Sessions</th><th>Status</th><th class="text-end">Actions</th></tr>
           </thead>
           <tbody>
             {% for trainer in trainers %}
             <tr>
               <td class="fw-semibold">{{ trainer.full_name }}</td>
+              <td>{{ trainer.school.name|default:"—" }}</td>
               <td>{{ trainer.employee_id }}</td>
               <td>{{ trainer.user.username }}</td>
               <td>{{ trainer.designation|default:"—" }}</td>

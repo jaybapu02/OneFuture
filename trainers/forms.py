@@ -4,6 +4,24 @@ from django.contrib.auth.models import User
 from .models import School, TrainerProfile
 
 
+class SchoolForm(forms.ModelForm):
+    class Meta:
+        model = School
+        fields = ["name", "address", "is_active"]
+        widgets = {
+            "name": forms.TextInput(
+                attrs={"class": "form-control", "placeholder": "e.g. Green Valley Public School"}
+            ),
+            "address": forms.TextInput(
+                attrs={"class": "form-control", "placeholder": "City, State"}
+            ),
+            "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
+        help_texts = {
+            "is_active": "Inactive schools cannot be assigned to new trainers.",
+        }
+
+
 class TrainerCreateForm(forms.ModelForm):
     username = forms.CharField(
         max_length=150,
