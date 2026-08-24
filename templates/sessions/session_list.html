@@ -65,43 +65,27 @@
   </form>
 
   <div class="row g-3 mb-3">
-    <div class="col-6 col-lg-2">
+    <div class="col-12 col-sm-4">
       <div class="card stat-card h-100">
-        <div class="card-body d-flex align-items-center gap-3 py-3">
+        <div class="card-body d-flex align-items-center gap-3 py-3 justify-content-center justify-content-sm-start">
           <span class="stat-icon" style="background:var(--brand-soft);color:var(--brand-dark);"><i class="bi bi-journal-text"></i></span>
           <div><div class="stat-label">Sessions</div><div class="stat-value">{{ summary.total_sessions }}</div></div>
         </div>
       </div>
     </div>
-    <div class="col-6 col-lg-2">
+    <div class="col-12 col-sm-4">
       <div class="card stat-card h-100">
-        <div class="card-body d-flex align-items-center gap-3 py-3">
+        <div class="card-body d-flex align-items-center gap-3 py-3 justify-content-center justify-content-sm-start">
           <span class="stat-icon" style="background:var(--info-soft);color:var(--info);"><i class="bi bi-calendar3"></i></span>
           <div><div class="stat-label">Class Days</div><div class="stat-value">{{ summary.working_days }}</div></div>
         </div>
       </div>
     </div>
-    <div class="col-6 col-lg-2">
+    <div class="col-12 col-sm-4">
       <div class="card stat-card h-100">
-        <div class="card-body d-flex align-items-center gap-3 py-3">
+        <div class="card-body d-flex align-items-center gap-3 py-3 justify-content-center justify-content-sm-start">
           <span class="stat-icon" style="background:var(--warning-soft);color:var(--warning);"><i class="bi bi-mortarboard"></i></span>
           <div><div class="stat-label">Classes Covered</div><div class="stat-value">{{ summary.classes_covered }}</div></div>
-        </div>
-      </div>
-    </div>
-    <div class="col-6 col-lg-3">
-      <div class="card stat-card h-100">
-        <div class="card-body d-flex align-items-center gap-3 py-3">
-          <span class="stat-icon" style="background:var(--success-soft);color:var(--success);"><i class="bi bi-people"></i></span>
-          <div><div class="stat-label">Students Present</div><div class="stat-value">{{ summary.students_present }}</div></div>
-        </div>
-      </div>
-    </div>
-    <div class="col-6 col-lg-3">
-      <div class="card stat-card h-100">
-        <div class="card-body d-flex align-items-center gap-3 py-3">
-          <span class="stat-icon" style="background:#f1f5f9;color:#64748b;"><i class="bi bi-person-x"></i></span>
-          <div><div class="stat-label">Students Absent</div><div class="stat-value">{{ summary.students_absent }}</div></div>
         </div>
       </div>
     </div>
