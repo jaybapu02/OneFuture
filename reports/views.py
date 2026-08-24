@@ -3,7 +3,7 @@ import json
 
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.db.models import Count
+from django.db.models import Count, Sum
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
@@ -175,22 +175,89 @@ def _admin_report(request):
     return render(request, "reports/admin_report.html", context)
 
 
-@login_required
-def download_report(request):
-    if not request.user.is_staff:
-        raise PermissionDenied
+def _human_date(value, fallback):
+    d = _parse_date(value)
+    if d:
+        return d.strftime("%d %b %Y")
+    return value or fallback
 
-    fmt = request.GET.get("format", "pdf").lower()
-    if fmt not in ("pdf", "docx"):
-        fmt = "pdf"
 
+def _report_meta(filters, sessions):
+    """Report metadata derived only from the filters and the filtered rows."""
+    period = (
+        f"{_human_date(filters.get('from'), 'Start')} to "
+        f"{_human_date(filters.get('to'), 'Today')}"
+    )
+
+    trainer_id = filters.get("trainer")
+    if trainer_id:
+        trainer = (
+            TrainerProfile.objects.filter(pk=trainer_id)
+            .values_list("full_name", flat=True)
+            .first()
+        )
+        trainer_label = trainer or "All trainers"
+    else:
+        count = sessions.values("trainer_id").distinct().count()
+        trainer_label = "All trainers" if count != 1 else (
+            sessions.values_list("trainer__full_name", flat=True).first()
+        )
+
+    class_id = filters.get("class")
+    if class_id:
+        cls = SchoolClass.objects.filter(pk=class_id).first()
+        school_label = str(cls) if cls else "All classes"
+    else:
+        distinct_classes = list(
+            sessions.values_list("school_class__name", "school_class__section").distinct()
+        )
+        if not distinct_classes:
+            school_label = "All classes"
+        elif len(distinct_classes) == 1:
+            name, section = distinct_classes[0]
+            school_label = f"{name} - {section}" if section else name
+        else:
+            school_label = f"{len(distinct_classes)} classes"
+
+    locations = sorted({
+        loc.strip()
+        for loc in sessions.values_list("location", flat=True)
+        if loc and loc.strip()
+    })
+    if not locations:
+        location_label = "All locations"
+    elif len(locations) == 1:
+        location_label = locations[0]
+    elif len(locations) <= 3:
+        location_label = ", ".join(locations)
+    else:
+        location_label = f"{len(locations)} locations"
+
+    return {
+        "trainer": trainer_label,
+        "school": school_label,
+        "location": location_label,
+        "period": period,
+    }
+
+
+def _download_context(request):
     sessions, filters = _admin_filtered_sessions(request)
     sessions = sessions.order_by("date", "school_class__name", "subject__name")
 
-    total_sessions = sessions.count()
+    session_rows = list(sessions)
+
+    total_sessions = len(session_rows)
     active_trainers = TrainerProfile.objects.filter(is_active=True).count()
     classes_count = sessions.values("school_class_id").distinct().count()
     subjects_count = sessions.values("subject_id").distinct().count()
+
+    totals = sessions.aggregate(
+        students_present=Sum("students_present"),
+        students_absent=Sum("students_absent"),
+    )
+    class_days = sessions.values("date").distinct().count()
+
     by_trainer = list(
         sessions.values("trainer__full_name")
         .annotate(count=Count("id"))
@@ -207,17 +274,33 @@ def download_report(request):
         .order_by("-count")
     )
 
-    context = {
+    return {
         "filter_summary": _filter_summary(filters),
+        "report_meta": _report_meta(filters, sessions),
         "total_sessions": total_sessions,
+        "class_days": class_days,
+        "students_present": totals["students_present"] or 0,
+        "students_absent": totals["students_absent"] or 0,
         "active_trainers": active_trainers,
         "classes_count": classes_count,
         "subjects_count": subjects_count,
         "by_trainer": by_trainer,
         "by_class": by_class,
         "by_subject": by_subject,
-        "sessions": list(sessions),
+        "sessions": session_rows,
     }
+
+
+@login_required
+def download_report(request):
+    if not request.user.is_staff:
+        raise PermissionDenied
+
+    fmt = request.GET.get("format", "pdf").lower()
+    if fmt not in ("pdf", "docx"):
+        fmt = "pdf"
+
+    context = _download_context(request)
 
     filename = f"OneFuture_Report_{datetime.date.today().strftime('%Y-%m-%d')}"
     if fmt == "pdf":
