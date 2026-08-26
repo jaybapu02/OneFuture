@@ -10,7 +10,7 @@ from django.views.decorators.http import require_http_methods
 from classes.models import SchoolClass
 from sessions.models import Session
 from tasks.models import Task
-from timetable.models import ManualClass, Timetable, TimetableOccurrenceRemoval
+from timetable.models import ManualClass, ScheduleException, Timetable, TimetableOccurrenceRemoval
 from trainers.models import TrainerProfile
 
 from .permissions import get_trainer_profile, staff_required, trainer_required
@@ -43,10 +43,31 @@ def _trainer_dashboard(request):
     now = timezone.localtime()
     day_name = today.strftime("%A")
 
+    # Check for holiday
+    today_holiday = ScheduleException.objects.filter(
+        trainer=profile, date=today, type=ScheduleException.Type.HOLIDAY
+    ).first()
+
+    # Check if trainer has any recurring classes today (for holiday button)
+    has_recurring_classes = Timetable.objects.filter(
+        trainer=profile, day_of_week=day_name, is_active=True
+    ).exists()
+
+    # Check for removed class IDs today
     removed_ids = set(
+        ScheduleException.objects.filter(
+            trainer=profile, date=today, type=ScheduleException.Type.CLASS_REMOVED
+        ).values_list("timetable_id", flat=True)
+    )
+
+    # Also check legacy TimetableOccurrenceRemoval for backward compatibility
+    legacy_removed_ids = set(
         TimetableOccurrenceRemoval.objects.filter(date=today)
+        .filter(timetable__trainer=profile)
         .values_list("timetable_id", flat=True)
     )
+    removed_ids = removed_ids | legacy_removed_ids
+
     entries = (
         Timetable.objects.filter(
             trainer=profile, day_of_week=day_name, is_active=True
@@ -153,6 +174,11 @@ def _trainer_dashboard(request):
         None,
     )
 
+    # Determine the next scheduled class (skip today if holiday)
+    next_scheduled_class = None
+    if not today_holiday:
+        next_scheduled_class = next_class
+
     context = {
         "greeting": _greeting(now),
         "today": today,
@@ -163,7 +189,9 @@ def _trainer_dashboard(request):
         "profile": profile,
         "week_preview": week_preview,
         "weekdays": WEEKDAYS,
-        "next_class": next_class,
+        "next_class": next_scheduled_class,
+        "today_holiday": today_holiday,
+        "has_recurring_classes": has_recurring_classes,
         "stats": {
             "today_classes": len(timetable_cards),
             "completed_today": len(sessions_today),
@@ -198,14 +226,44 @@ def _admin_dashboard(request):
         .order_by("start_time", "trainer__full_name")
     )
     entry_ids = [e.pk for e in today_entries]
+
+    # Get completed sessions for today
     completed_session_timetable_ids = set(
         Session.objects.filter(date=today, timetable_id__in=entry_ids)
         .values_list("timetable_id", flat=True)
     )
 
+    # Get removed class IDs for today (from ScheduleException)
+    removed_timetable_ids = set(
+        ScheduleException.objects.filter(
+            date=today, type=ScheduleException.Type.CLASS_REMOVED
+        ).values_list("timetable_id", flat=True)
+    )
+    # Also check legacy removals
+    legacy_removed_ids = set(
+        TimetableOccurrenceRemoval.objects.filter(date=today)
+        .values_list("timetable_id", flat=True)
+    )
+    removed_timetable_ids = removed_timetable_ids | legacy_removed_ids
+
+    # Get holidays for today
+    today_holidays = list(
+        ScheduleException.objects.filter(
+            date=today, type=ScheduleException.Type.HOLIDAY
+        ).select_related("trainer", "school", "created_by")
+    )
+    holiday_trainer_ids = {h.trainer_id for h in today_holidays}
+
     activity_rows = []
     upcoming_classes = []
     for entry in today_entries:
+        # Skip removed classes entirely
+        if entry.pk in removed_timetable_ids:
+            continue
+        # Skip classes for trainers on holiday
+        if entry.trainer_id in holiday_trainer_ids:
+            continue
+
         done = entry.pk in completed_session_timetable_ids
         if done:
             status = "completed"
@@ -244,6 +302,7 @@ def _admin_dashboard(request):
         "upcoming_classes": upcoming_classes,
         "pending_rows": pending_rows,
         "recent_sessions": recent_sessions,
+        "today_holidays": today_holidays,
     }
     return render(request, "dashboard/admin_dashboard.html", context)
 

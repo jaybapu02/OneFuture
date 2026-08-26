@@ -215,6 +215,106 @@ AUGUST_2026 = [
         None,
         None,
     ),
+    (
+        datetime.date(2026, 8, 20),
+        [
+            (
+                5,
+                4,
+                None,
+                None,
+                "Taught about encoding and decoding",
+                None,
+            ),
+            (
+                7,
+                5,
+                None,
+                None,
+                "Types of data and introduction to dataset",
+                None,
+            ),
+        ],
+        "14:00",
+        "16:00",
+    ),
+    (
+        datetime.date(2026, 8, 21),
+        [
+            (
+                4,
+                5,
+                None,
+                None,
+                "Thought about data and recoding-decoding",
+                None,
+            ),
+            (
+                6,
+                5,
+                None,
+                None,
+                "Thought about types of data and revised the encoding decoding concept",
+                None,
+            ),
+        ],
+        "14:00",
+        "16:00",
+    ),
+    (
+        datetime.date(2026, 8, 24),
+        [
+            (
+                5,
+                5,
+                None,
+                None,
+                "About patern and types of data",
+                None,
+            ),
+            (
+                7,
+                6,
+                None,
+                None,
+                "Structured and unstructured data set. What is training data set, what is validation dataset and what is test dataset",
+                None,
+            ),
+            (
+                8,
+                4,
+                None,
+                None,
+                "First 3 step of project Life cycle",
+                None,
+            ),
+        ],
+        "12:00",
+        "16:00",
+    ),
+    (
+        datetime.date(2026, 8, 25),
+        [
+            (
+                3,
+                6,
+                None,
+                None,
+                "Taught about Caesar Cipher rule",
+                None,
+            ),
+            (
+                6,
+                6,
+                None,
+                None,
+                "What Ai and how ai works.",
+                None,
+            ),
+        ],
+        "14:00",
+        "16:00",
+    ),
 ]
 
 DAY_NAMES = [

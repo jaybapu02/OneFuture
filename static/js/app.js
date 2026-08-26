@@ -88,3 +88,20 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 })();
+
+// Remove-class modal: pass data from the trigger button to the form.
+document.addEventListener("DOMContentLoaded", function () {
+  var modal = document.getElementById("removeClassModal");
+  if (!modal) return;
+  modal.addEventListener("show.bs.modal", function (event) {
+    var btn = event.relatedTarget;
+    if (!btn) return;
+    var timetableId = btn.getAttribute("data-timetable-id") || "";
+    var manualId = btn.getAttribute("data-manual-id") || "";
+    var className = btn.getAttribute("data-class-name") || "this class";
+    document.getElementById("removeTimetableId").value = timetableId;
+    document.getElementById("removeManualId").value = manualId;
+    document.getElementById("removeClassBody").textContent =
+      className + " will be removed from today's schedule. Your regular weekly timetable will not be affected.";
+  });
+});

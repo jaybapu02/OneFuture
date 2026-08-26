@@ -133,6 +133,62 @@ class TimetableOccurrenceRemoval(models.Model):
         return f"{self.timetable} removed on {self.date}"
 
 
+class ScheduleException(models.Model):
+    """Date-specific exception: holiday or individual class removal.
+
+    HOLIDAY: entire day cancelled for a trainer (timetable is NULL).
+    CLASS_REMOVED: one specific timetable occurrence suppressed for that date.
+    """
+
+    class Type(models.TextChoices):
+        HOLIDAY = "HOLIDAY", "Holiday"
+        CLASS_REMOVED = "CLASS_REMOVED", "Class Removed"
+
+    trainer = models.ForeignKey(
+        TrainerProfile, on_delete=models.CASCADE, related_name="schedule_exceptions"
+    )
+    school = models.ForeignKey(
+        School, on_delete=models.CASCADE, related_name="schedule_exceptions",
+        null=True, blank=True,
+    )
+    date = models.DateField()
+    type = models.CharField(max_length=20, choices=Type.choices)
+    timetable = models.ForeignKey(
+        Timetable, on_delete=models.CASCADE,
+        related_name="schedule_exceptions",
+        null=True, blank=True,
+    )
+    reason = models.TextField(blank=True)
+    created_by = models.ForeignKey(
+        "auth.User", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="created_schedule_exceptions",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["date"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["trainer", "date", "type"],
+                name="unique_holiday_per_trainer_date",
+            ),
+            models.UniqueConstraint(
+                fields=["timetable", "date", "type"],
+                condition=models.Q(type="CLASS_REMOVED"),
+                name="unique_class_removal_per_timetable_date",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["trainer", "date"]),
+            models.Index(fields=["date", "type"]),
+        ]
+
+    def __str__(self):
+        if self.type == self.Type.HOLIDAY:
+            return f"Holiday: {self.trainer} on {self.date}"
+        return f"Removed: {self.timetable} on {self.date}"
+
+
 class ManualClass(models.Model):
     """A one-off class on a specific date, added by the trainer.
 

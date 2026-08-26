@@ -54,10 +54,14 @@
                 <tr>
                   <th class="tt-day-col">
                     {{ day }}
+                    {% if day in holiday_dates %}<span class="badge badge-soft-warning ms-1">Holiday</span>{% endif %}
                     {% if day == today|date:"l" %}<span class="badge badge-soft-brand ms-1">Today</span>{% endif %}
                   </th>
                   {% for pc in period_columns %}
                   <td class="text-center {% if day == today|date:'l' %}today-col{% endif %}">
+                    {% if day in holiday_dates %}
+                      <span class="text-muted small fst-italic">Holiday</span>
+                    {% else %}
                     {% for cell_day, day_entries in pc.cells.items %}
                       {% if cell_day == day %}
                         {% for cell in day_entries %}
@@ -66,7 +70,7 @@
                           {% else %}
                             <a class="tt-cell d-block text-decoration-none" href="{% url 'timetable:class_detail' cell.entry.pk %}{% if cell.date %}?date={{ cell.date|date:'Y-m-d' }}{% endif %}">
                               <span class="tt-cell-class">{{ cell.entry.school_class }}</span>
-                              <span class="tt-cell-time">{{ cell.entry.start_time|time:"g:i A" }} – {{ cell.entry.end_time|time:"g:i A" }}</span>
+                              <span class="tt-cell-time">{{ cell.entry.start_time|time:"g:i A" }} &ndash; {{ cell.entry.end_time|time:"g:i A" }}</span>
                               {% if cell.completed %}
                               <span class="badge badge-soft-success mt-1"><i class="bi bi-check-lg me-1"></i>Completed</span>
                               {% endif %}
@@ -75,6 +79,7 @@
                         {% endfor %}
                       {% endif %}
                     {% endfor %}
+                    {% endif %}
                   </td>
                   {% endfor %}
                 </tr>
@@ -92,8 +97,12 @@
             <div class="tt-day-block mb-3">
               <div class="tt-day-heading">
                 {{ day }}
+                {% if day in holiday_dates %}<span class="badge badge-soft-warning ms-1">Holiday</span>{% endif %}
                 {% if day == today|date:"l" %}<span class="badge badge-soft-brand ms-1">Today</span>{% endif %}
               </div>
+              {% if day in holiday_dates %}
+                <div class="tt-card mb-2 text-muted fst-italic">Holiday &mdash; No classes</div>
+              {% else %}
               {% for pc in period_columns %}
                 {% for cell_day, day_entries in pc.cells.items %}
                   {% if cell_day == day %}
@@ -104,9 +113,9 @@
                         <a class="tt-card d-block mb-2 text-decoration-none text-reset" href="{% url 'timetable:class_detail' cell.entry.pk %}{% if cell.date %}?date={{ cell.date|date:'Y-m-d' }}{% endif %}">
                           <div class="d-flex justify-content-between align-items-start gap-2">
                             <div>
-                              <div class="tt-time">{{ cell.entry.start_time|time:"g:i A" }} – {{ cell.entry.end_time|time:"g:i A" }}</div>
-                              <div class="tt-class">{{ cell.entry.school_class }} · Period {{ cell.entry.period }}
-                                {% if cell.entry.subject %} · {{ cell.entry.subject.name }}{% endif %}</div>
+                              <div class="tt-time">{{ cell.entry.start_time|time:"g:i A" }} &ndash; {{ cell.entry.end_time|time:"g:i A" }}</div>
+                              <div class="tt-class">{{ cell.entry.school_class }} &middot; Period {{ cell.entry.period }}
+                                {% if cell.entry.subject %} &middot; {{ cell.entry.subject.name }}{% endif %}</div>
                             </div>
                             {% if cell.completed %}<span class="badge badge-soft-success"><i class="bi bi-check-lg"></i> Done</span>{% endif %}
                           </div>
@@ -116,6 +125,7 @@
                   {% endif %}
                 {% endfor %}
               {% endfor %}
+              {% endif %}
             </div>
             {% endfor %}
             {% endif %}

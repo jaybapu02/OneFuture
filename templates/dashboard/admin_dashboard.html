@@ -106,6 +106,21 @@
     </div>
   </div>
 
+  {% if today_holidays %}
+  <div class="mb-4">
+    {% for holiday in today_holidays %}
+    <div class="alert alert-warning d-flex align-items-center gap-3 mb-2" role="alert">
+      <span style="font-size:1.5rem;">&#127876;&#65039;</span>
+      <div class="flex-grow-1">
+        <div class="fw-bold">School Holiday &mdash; {{ holiday.school|default:"N/A" }}</div>
+        <div class="small text-muted">{{ today|date:"d F Y" }}{% if holiday.created_by %} &middot; Marked by: {{ holiday.created_by.profile.full_name|default:holiday.created_by.username }}{% endif %}</div>
+      </div>
+      <span class="badge badge-soft-warning">Holiday</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   <div class="row g-4">
     <div class="col-lg-7">
       <div class="card h-100">
@@ -126,7 +141,7 @@
               <tbody>
                 {% for row in activity_rows %}
                 <tr>
-                  <td class="text-nowrap fw-semibold">{{ row.entry.start_time|time:"g:i A" }}{% if row.entry.end_time %} – {{ row.entry.end_time|time:"g:i A" }}{% endif %}</td>
+                  <td class="text-nowrap fw-semibold">{{ row.entry.start_time|time:"g:i A" }}{% if row.entry.end_time %} &ndash; {{ row.entry.end_time|time:"g:i A" }}{% endif %}</td>
                   <td>{{ row.entry.trainer.full_name }}</td>
                   <td>{{ row.entry.school_class }}</td>
                   <td>{{ row.entry.subject.name }}</td>
@@ -151,7 +166,7 @@
             {% for row in activity_rows %}
             <div class="activity-card">
               <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
-                <span class="act-time">{{ row.entry.start_time|time:"g:i A" }}{% if row.entry.end_time %} – {{ row.entry.end_time|time:"g:i A" }}{% endif %}</span>
+                <span class="act-time">{{ row.entry.start_time|time:"g:i A" }}{% if row.entry.end_time %} &ndash; {{ row.entry.end_time|time:"g:i A" }}{% endif %}</span>
                 {% if row.status == "completed" %}
                 <span class="badge badge-soft-success badge-status">Completed</span>
                 {% elif row.status == "in_progress" %}
@@ -163,7 +178,7 @@
                 {% endif %}
               </div>
               <div class="act-trainer">{{ row.entry.trainer.full_name }}</div>
-              <div class="act-meta">{{ row.entry.school_class }} · {{ row.entry.subject.name }}</div>
+              <div class="act-meta">{{ row.entry.school_class }} &middot; {{ row.entry.subject.name }}</div>
             </div>
             {% endfor %}
           </div>
@@ -188,7 +203,7 @@
             <div class="mini-row">
               <span class="mini-icon">{% if row.status == "in_progress" %}<i class="bi bi-play-fill"></i>{% else %}<i class="bi bi-calendar-event"></i>{% endif %}</span>
               <div class="mini-body">
-                <div class="mini-title">{{ row.entry.school_class }} · {{ row.entry.subject.name }}</div>
+                <div class="mini-title">{{ row.entry.school_class }} &middot; {{ row.entry.subject.name }}</div>
                 <div class="mini-sub">{{ row.entry.trainer.full_name }}</div>
               </div>
               <span class="mini-time">{{ row.entry.start_time|time:"g:i A" }}</span>
@@ -214,7 +229,7 @@
               <span class="mini-icon" style="background:var(--warning-soft);color:var(--warning);"><i class="bi bi-hourglass-split"></i></span>
               <div class="mini-body">
                 <div class="mini-title">{{ row.entry.trainer.full_name }}</div>
-                <div class="mini-sub">{{ row.entry.school_class }} · {{ row.entry.subject.name }}</div>
+                <div class="mini-sub">{{ row.entry.school_class }} &middot; {{ row.entry.subject.name }}</div>
               </div>
               <span class="badge badge-soft-warning badge-status">Pending</span>
             </div>

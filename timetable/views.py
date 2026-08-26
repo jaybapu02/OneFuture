@@ -19,6 +19,7 @@ from .importers import import_timetable_rows
 from .models import (
     DAYS_OF_WEEK,
     ManualClass,
+    ScheduleException,
     Timetable,
     TimetableOccurrenceRemoval,
 )
@@ -33,10 +34,11 @@ def _week_start(reference_date):
 
 
 def _remove_date(profile, date):
-    """Occurrence-removal dates for the trainer on a given date."""
+    """Schedule exception IDs for the trainer on a given date."""
     return set(
-        TimetableOccurrenceRemoval.objects.filter(
-            timetable__trainer=profile, date=date
+        ScheduleException.objects.filter(
+            timetable__trainer=profile, date=date,
+            type=ScheduleException.Type.CLASS_REMOVED,
         ).values_list("timetable_id", flat=True)
     )
 
@@ -82,6 +84,16 @@ def my_timetable(request):
 
     sessions_this_week = _session_lookup(profile, week_start, week_end)
 
+    # Get holiday dates for this week
+    holiday_dates = set(
+        ScheduleException.objects.filter(
+            trainer=profile,
+            date__gte=week_start,
+            date__lte=week_end,
+            type=ScheduleException.Type.HOLIDAY,
+        ).values_list("date", flat=True)
+    )
+
     periods = sorted({e.period for e in entries if e.period})
 
     enriched = {}
@@ -92,6 +104,7 @@ def my_timetable(request):
             "entry": e,
             "date": date_key,
             "removed": e.pk in _remove_date(profile, date_key),
+            "holiday": date_key in holiday_dates,
             "session": session,
             "completed": session is not None,
         }
@@ -125,6 +138,7 @@ def my_timetable(request):
         "prev_week": week_start - datetime.timedelta(days=7),
         "next_week": week_start + datetime.timedelta(days=7),
         "weekly_count": entries.count(),
+        "holiday_dates": holiday_dates,
     }
     return render(request, "timetable/my_timetable.html", context)
 
@@ -327,8 +341,9 @@ def class_detail(request, pk):
         "context_date": context_date,
         "sessions": sessions,
         "tasks": tasks,
-        "removed_on": TimetableOccurrenceRemoval.objects.filter(
-            timetable=entry, date=context_date
+        "removed_on": ScheduleException.objects.filter(
+            timetable=entry, date=context_date,
+            type=ScheduleException.Type.CLASS_REMOVED,
         ).exists(),
     }
     return render(request, "timetable/class_detail.html", context)
@@ -347,8 +362,13 @@ def occurrence_remove_date(request, pk):
         date = datetime.date.fromisoformat(date_str)
     except ValueError:
         date = timezone.localdate()
-    TimetableOccurrenceRemoval.objects.get_or_create(
-        timetable=entry, date=date
+    ScheduleException.objects.get_or_create(
+        trainer=profile,
+        school=entry.school,
+        date=date,
+        type=ScheduleException.Type.CLASS_REMOVED,
+        timetable=entry,
+        defaults={"created_by": request.user},
     )
     messages.success(
         request,
@@ -381,6 +401,102 @@ def recurring_remove_weekly(request, pk):
         return redirect("timetable:my_timetable")
     context = {"entry": entry, "cancel_url": "timetable:my_timetable"}
     return render(request, "timetable/recurring_delete_confirm.html", context)
+
+
+@trainer_required
+@require_http_methods(["POST"])
+def mark_holiday(request):
+    """Mark today as a school holiday — hides all classes for the trainer."""
+    profile = request.user.profile
+    today = timezone.localdate()
+    day_name = today.strftime("%A")
+    has_classes = Timetable.objects.filter(
+        trainer=profile, day_of_week=day_name, is_active=True
+    ).exists()
+    if not has_classes:
+        messages.warning(request, "You have no classes scheduled for today.")
+        return redirect("dashboard")
+    exception, created = ScheduleException.objects.get_or_create(
+        trainer=profile,
+        date=today,
+        type=ScheduleException.Type.HOLIDAY,
+        defaults={
+            "school": profile.school,
+            "created_by": request.user,
+            "reason": request.POST.get("reason", ""),
+        },
+    )
+    if created:
+        messages.success(request, "Today has been marked as a school holiday.")
+    else:
+        messages.info(request, "Today is already marked as a holiday.")
+    return redirect("dashboard")
+
+
+@trainer_required
+@require_http_methods(["POST"])
+def undo_holiday(request):
+    """Remove the holiday exception for today — restores the regular timetable."""
+    profile = request.user.profile
+    today = timezone.localdate()
+    deleted, _ = ScheduleException.objects.filter(
+        trainer=profile,
+        date=today,
+        type=ScheduleException.Type.HOLIDAY,
+    ).delete()
+    if deleted:
+        messages.success(request, "Holiday removed. Your regular timetable is restored for today.")
+    else:
+        messages.info(request, "No holiday was found for today.")
+    return redirect("dashboard")
+
+
+@trainer_required
+@require_http_methods(["POST"])
+def remove_class_today(request):
+    """Remove a single class for today from the dashboard card menu."""
+    profile = request.user.profile
+    today = timezone.localdate()
+    timetable_id = request.POST.get("timetable_id", "")
+    manual_id = request.POST.get("manual_id", "")
+    next_url = request.POST.get("next", "dashboard")
+
+    if timetable_id:
+        try:
+            entry = Timetable.objects.get(pk=int(timetable_id), trainer=profile, is_active=True)
+        except (Timetable.DoesNotExist, ValueError, TypeError):
+            messages.error(request, "Class not found.")
+            return redirect(next_url)
+        ScheduleException.objects.get_or_create(
+            trainer=profile,
+            school=entry.school,
+            date=today,
+            type=ScheduleException.Type.CLASS_REMOVED,
+            timetable=entry,
+            defaults={"created_by": request.user},
+        )
+        messages.success(
+            request,
+            f"{entry.school_class} removed from today. "
+            "Your weekly timetable is unchanged.",
+        )
+    elif manual_id:
+        try:
+            manual = ManualClass.objects.get(pk=int(manual_id), trainer=profile, is_active=True)
+        except (ManualClass.DoesNotExist, ValueError, TypeError):
+            messages.error(request, "Class not found.")
+            return redirect(next_url)
+        manual.is_active = False
+        manual.save(update_fields=["is_active", "updated_at"])
+        messages.success(
+            request,
+            f"{manual.school_class} removed from today. "
+            "Your weekly timetable is unchanged.",
+        )
+    else:
+        messages.error(request, "No class specified.")
+
+    return redirect(next_url)
 
 
 @staff_required
