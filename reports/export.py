@@ -254,11 +254,10 @@ def _pair_table(rows, styles, label_width=40 * mm):
 def _summary_strip(metrics, styles):
     labels = [
         "Total Sessions", "Class Days", "Classes Covered",
-        "Students Present", "Students Absent",
     ]
     values_row = [_para(v, styles["kpi_value"]) for v in metrics]
     labels_row = [_para(lbl, styles["kpi_label"]) for lbl in labels]
-    table = Table([values_row, labels_row], colWidths=[CONTENT_W / 5.0] * 5)
+    table = Table([values_row, labels_row], colWidths=[CONTENT_W / 3.0] * 3)
     table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(SOFT_BG)),
         ("BOX", (0, 0), (-1, -1), 0.75, colors.HexColor(LINE)),
@@ -394,8 +393,6 @@ def build_pdf(context):
         context.get("total_sessions", 0),
         context.get("class_days", 0),
         context.get("classes_count", 0),
-        context.get("students_present", 0),
-        context.get("students_absent", 0),
     ], st))
 
     blocks = [

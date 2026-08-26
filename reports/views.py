@@ -3,7 +3,7 @@ import json
 
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.db.models import Count, Sum
+from django.db.models import Count
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
@@ -252,10 +252,6 @@ def _download_context(request):
     classes_count = sessions.values("school_class_id").distinct().count()
     subjects_count = sessions.values("subject_id").distinct().count()
 
-    totals = sessions.aggregate(
-        students_present=Sum("students_present"),
-        students_absent=Sum("students_absent"),
-    )
     class_days = sessions.values("date").distinct().count()
 
     by_trainer = list(
@@ -279,8 +275,6 @@ def _download_context(request):
         "report_meta": _report_meta(filters, sessions),
         "total_sessions": total_sessions,
         "class_days": class_days,
-        "students_present": totals["students_present"] or 0,
-        "students_absent": totals["students_absent"] or 0,
         "active_trainers": active_trainers,
         "classes_count": classes_count,
         "subjects_count": subjects_count,
