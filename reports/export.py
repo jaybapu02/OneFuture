@@ -464,10 +464,15 @@ def build_docx(context):
     _docx_pair_table(doc, [["Filter", "Value"]] + [[k, v] for k, v in context["filter_summary"]])
 
     doc.add_heading("Summary", level=1)
+    summary_cards = context.get("summary_cards") or [
+        ("Total Sessions", context["total_sessions"]),
+        ("Active Trainers", context["active_trainers"]),
+        ("Classes Covered", context["classes_count"]),
+        ("Subjects Covered", context["subjects_count"]),
+    ]
     _docx_pair_table(doc, [
-        ["Total Sessions", "Active Trainers", "Classes Covered", "Subjects Covered"],
-        [str(context["total_sessions"]), str(context["active_trainers"]),
-         str(context["classes_count"]), str(context["subjects_count"])],
+        [label for label, _ in summary_cards],
+        [str(value) for _, value in summary_cards],
     ])
 
     doc.add_heading("Sessions by Trainer", level=1)

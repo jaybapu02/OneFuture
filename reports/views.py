@@ -53,7 +53,7 @@ def _admin_filtered_sessions(request):
     return sessions, filters
 
 
-def _filter_summary(filters):
+def _filter_summary(filters, default_trainer="All trainers"):
     from_label = filters.get("from") or "Start"
     to_label = filters.get("to") or "Today"
     summary = [("Period", f"{from_label} to {to_label}")]
@@ -61,9 +61,9 @@ def _filter_summary(filters):
     trainer_id = filters.get("trainer")
     if trainer_id:
         name = TrainerProfile.objects.filter(pk=trainer_id).values_list("full_name", flat=True).first()
-        summary.append(("Trainer", name or "All trainers"))
+        summary.append(("Trainer", name or default_trainer))
     else:
-        summary.append(("Trainer", "All trainers"))
+        summary.append(("Trainer", default_trainer))
 
     class_id = filters.get("class")
     if class_id:
@@ -133,6 +133,7 @@ def _trainer_report(request):
         "classes_handled": list(classes_handled),
         "topics": topics,
         "chart": json.dumps({"labels": labels, "data": data}),
+        "download_query": request.GET.urlencode(),
         "classes": SchoolClass.objects.filter(is_active=True).order_by("name", "section"),
         "subjects": Subject.objects.filter(is_active=True).order_by("name"),
     }
@@ -182,7 +183,7 @@ def _human_date(value, fallback):
     return value or fallback
 
 
-def _report_meta(filters, sessions):
+def _report_meta(filters, sessions, default_trainer=None):
     """Report metadata derived only from the filters and the filtered rows."""
     period = (
         f"{_human_date(filters.get('from'), 'Start')} to "
@@ -196,7 +197,9 @@ def _report_meta(filters, sessions):
             .values_list("full_name", flat=True)
             .first()
         )
-        trainer_label = trainer or "All trainers"
+        trainer_label = trainer or default_trainer or "All trainers"
+    elif default_trainer:
+        trainer_label = default_trainer
     else:
         count = sessions.values("trainer_id").distinct().count()
         trainer_label = "All trainers" if count != 1 else (
@@ -241,8 +244,8 @@ def _report_meta(filters, sessions):
     }
 
 
-def _download_context(request):
-    sessions, filters = _admin_filtered_sessions(request)
+def _build_download_context(sessions, filters, default_trainer=None):
+    """Assemble the export context for a (already scoped) session queryset."""
     sessions = sessions.order_by("date", "school_class__name", "subject__name")
 
     session_rows = list(sessions)
@@ -271,8 +274,8 @@ def _download_context(request):
     )
 
     return {
-        "filter_summary": _filter_summary(filters),
-        "report_meta": _report_meta(filters, sessions),
+        "filter_summary": _filter_summary(filters, default_trainer),
+        "report_meta": _report_meta(filters, sessions, default_trainer),
         "total_sessions": total_sessions,
         "class_days": class_days,
         "active_trainers": active_trainers,
@@ -285,16 +288,46 @@ def _download_context(request):
     }
 
 
-@login_required
-def download_report(request):
-    if not request.user.is_staff:
+def _download_context(request):
+    sessions, filters = _admin_filtered_sessions(request)
+    return _build_download_context(sessions, filters)
+
+
+def _trainer_download_context(request):
+    """Export context scoped to the logged-in trainer only.
+
+    The ``trainer`` query parameter is deliberately ignored so a trainer can
+    never widen the scope beyond their own sessions.
+    """
+    profile = get_trainer_profile(request.user)
+    if profile is None:
         raise PermissionDenied
 
+    sessions = Session.objects.filter(trainer=profile).select_related(
+        "trainer", "school_class", "subject"
+    )
+    sessions, filters = _base_filters(request, sessions)
+
+    context = _build_download_context(sessions, filters, profile.full_name)
+    context["summary_cards"] = [
+        ("Total Sessions", context["total_sessions"]),
+        ("Class Days", context["class_days"]),
+        ("Classes Covered", context["classes_count"]),
+        ("Subjects Covered", context["subjects_count"]),
+    ]
+    return context
+
+
+@login_required
+def download_report(request):
     fmt = request.GET.get("format", "pdf").lower()
     if fmt not in ("pdf", "docx"):
         fmt = "pdf"
 
-    context = _download_context(request)
+    if request.user.is_staff:
+        context = _download_context(request)
+    else:
+        context = _trainer_download_context(request)
 
     filename = f"OneFuture_Report_{datetime.date.today().strftime('%Y-%m-%d')}"
     if fmt == "pdf":
